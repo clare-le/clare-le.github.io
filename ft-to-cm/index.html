@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>英制身高換算 ft/in → cm</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a31;
+      --card2: #1a2550;
+      --text: #eef2ff;
+      --muted: #b8c0e0;
+      --accent: #7c9bff;
+      --accent2: #59d0ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: radial-gradient(circle at 20% 0%, #182445 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .wrap { width: min(480px, 100%); }
+    .card {
+      background: linear-gradient(135deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 4px; font-size: 24px; }
+    .sub { margin: 0 0 24px; font-size: 13px; color: var(--muted); }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .field { flex: 1; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .unit {
+      position: absolute; right: 14px;
+      font-size: 13px; font-weight: 700; color: var(--accent);
+      pointer-events: none; user-select: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 13px 42px 13px 14px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(124,155,255,.35);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color .15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { border-color: rgba(89,208,255,.6); }
+
+    .divider {
+      text-align: center;
+      color: var(--muted);
+      font-size: 22px;
+      margin: 4px 0 16px;
+    }
+
+    .field-cm .input-wrap input {
+      font-size: 28px;
+      padding: 15px 52px 15px 14px;
+      background: rgba(89,208,255,.06);
+      border-color: rgba(89,208,255,.35);
+    }
+    .field-cm .input-wrap input:focus { border-color: rgba(89,208,255,.6); }
+    .field-cm .unit { font-size: 15px; color: var(--accent2); }
+
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .preset {
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(124,155,255,.12);
+      border: 1px solid rgba(124,155,255,.3);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: .15s;
+    }
+    .preset:hover { background: rgba(89,208,255,.18); color: var(--text); }
+
+    .footer { margin-top: 20px; font-size: 12px; color: var(--muted); text-align: center; }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="card">
+    <h1>📐 英制身高換算</h1>
+    <p class="sub">ft / in → cm，也可反向輸入 cm</p>
+
+    <div class="row">
+      <div class="field">
+        <label>英呎</label>
+        <div class="input-wrap">
+          <input type="number" id="ft" placeholder="5" min="0" max="9" />
+          <span class="unit">ft</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>英吋</label>
+        <div class="input-wrap">
+          <input type="number" id="in" placeholder="9" min="0" max="11" />
+          <span class="unit">in</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider">⇅</div>
+
+    <div class="field field-cm">
+      <label>公分</label>
+      <div class="input-wrap">
+        <input type="number" id="cm" placeholder="175.3" min="0" />
+        <span class="unit">cm</span>
+      </div>
+    </div>
+
+    <div class="presets" id="presets"></div>
+
+    <div class="footer">
+      1 ft = 30.48 cm &nbsp;·&nbsp; 1 in = 2.54 cm &nbsp;·&nbsp;
+      <a href="https://clare-le.github.io">← 返回首頁</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  const ftEl = document.getElementById('ft');
+  const inEl = document.getElementById('in');
+  const cmEl = document.getElementById('cm');
+
+  function ftInToCm(ft, inch) {
+    return (ft * 12 + inch) * 2.54;
+  }
+  function cmToFtIn(cm) {
+    const totalIn = cm / 2.54;
+    const ft = Math.floor(totalIn / 12);
+    const inch = totalIn - ft * 12;
+    return { ft, inch };
+  }
+
+  function calcFromFtIn() {
+    const ft = parseFloat(ftEl.value) || 0;
+    const inch = parseFloat(inEl.value) || 0;
+    if (ftEl.value === '' && inEl.value === '') { cmEl.value = ''; return; }
+    cmEl.value = ftInToCm(ft, inch).toFixed(1);
+  }
+
+  function calcFromCm() {
+    const cm = parseFloat(cmEl.value);
+    if (isNaN(cm)) { ftEl.value = ''; inEl.value = ''; return; }
+    const { ft, inch } = cmToFtIn(cm);
+    ftEl.value = ft;
+    inEl.value = inch.toFixed(1);
+  }
+
+  ftEl.addEventListener('input', calcFromFtIn);
+  inEl.addEventListener('input', calcFromFtIn);
+  cmEl.addEventListener('input', calcFromCm);
+
+  // Presets: common heights
+  const presets = [
+    { ft: 5, inch: 0 },
+    { ft: 5, inch: 3 },
+    { ft: 5, inch: 6 },
+    { ft: 5, inch: 9 },
+    { ft: 6, inch: 0 },
+    { ft: 6, inch: 3 },
+  ];
+  const presetsEl = document.getElementById('presets');
+  presets.forEach(({ ft, inch }) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset';
+    btn.textContent = `${ft}'${inch}"`;
+    btn.onclick = () => {
+      ftEl.value = ft;
+      inEl.value = inch;
+      calcFromFtIn();
+    };
+    presetsEl.appendChild(btn);
+  });
+</script>
+</body>
+</html>
