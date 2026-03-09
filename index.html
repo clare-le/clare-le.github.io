@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clare Le — 專案首頁</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a31;
+      --card2: #1a2550;
+      --text: #eef2ff;
+      --muted: #b8c0e0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: radial-gradient(circle at 20% 0%, #182445 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .wrap { width: min(760px, 100%); }
+    .hero {
+      background: linear-gradient(135deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(26px, 5vw, 38px); }
+    .sub { margin: 0 0 22px; color: var(--muted); font-size: 15px; }
+    .links { display: grid; gap: 10px; }
+    .link {
+      display: block;
+      padding: 13px 16px;
+      border-radius: 12px;
+      background: rgba(124,155,255,.16);
+      border: 1px solid rgba(124,155,255,.4);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: .15s ease;
+    }
+    .link:hover {
+      transform: translateY(-1px);
+      background: rgba(89,208,255,.2);
+      border-color: rgba(89,208,255,.5);
+    }
+    .hint { margin-top: 16px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>🚀 專案首頁</h1>
+      <p class="sub">Clare Le 的小工具集。</p>
+
+      <div class="links">
+        <a class="link" href="https://clare-le.github.io/pwa-calculator/calc.html">🧮 PWA 計算機（iOS 可加到主畫面）</a>
+      </div>
+
+      <p class="hint">由 Clare Le 維護</p>
+    </section>
+  </main>
+</body>
+</html>
