@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>今晚誰洗碗？</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a31;
+      --card2: #1a2550;
+      --text: #eef2ff;
+      --muted: #b8c0e0;
+      --accent: #7c9bff;
+      --accent2: #59d0ff;
+      --gold: #ffd060;
+      --gold2: #ffb020;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: radial-gradient(circle at 20% 0%, #182445 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .wrap { width: min(420px, 100%); }
+    .card {
+      background: linear-gradient(135deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 24px;
+      padding: 32px 24px 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.4);
+      text-align: center;
+    }
+    h1 { font-size: 22px; margin-bottom: 6px; }
+    .sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+
+    /* Coin */
+    .coin-wrap {
+      perspective: 600px;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 32px;
+    }
+    .coin {
+      width: 160px;
+      height: 160px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: none;
+    }
+    .coin.spinning {
+      animation: spin-fast var(--spin-dur, 0.12s) linear infinite;
+    }
+    .coin.landing {
+      animation: spin-slow 1.4s cubic-bezier(.2,.8,.4,1) forwards;
+    }
+    @keyframes spin-fast {
+      from { transform: rotateY(0deg); }
+      to   { transform: rotateY(360deg); }
+    }
+    @keyframes spin-slow {
+      0%   { transform: rotateY(0deg); }
+      100% { transform: rotateY(var(--final-rot, 1800deg)); }
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      font-weight: 800;
+      gap: 6px;
+      border: 4px solid;
+      box-shadow: inset 0 0 20px rgba(0,0,0,.3);
+    }
+    .face-front {
+      background: radial-gradient(circle at 35% 35%, #ffe585, var(--gold2));
+      border-color: var(--gold);
+      color: #5a3800;
+    }
+    .face-back {
+      background: radial-gradient(circle at 35% 35%, #b0c8ff, #5070c0);
+      border-color: #99b8ff;
+      color: #0b1844;
+      transform: rotateY(180deg);
+    }
+    .face-emoji { font-size: 44px; line-height: 1; }
+    .face-label { font-size: 15px; letter-spacing: .5px; }
+
+    /* Result overlay */
+    .result-wrap {
+      min-height: 56px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result {
+      font-size: 28px;
+      font-weight: 800;
+      opacity: 0;
+      transform: scale(.7);
+      transition: opacity .4s ease, transform .4s ease;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .result.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .result.you  { color: #ff7a7a; }
+    .result.them { color: var(--accent2); }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .15s ease;
+      letter-spacing: .5px;
+    }
+    .btn:not(:disabled) {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0b1020;
+      box-shadow: 0 4px 18px rgba(89,208,255,.25);
+    }
+    .btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(89,208,255,.35);
+    }
+    .btn:not(:disabled):active { transform: translateY(0); }
+    .btn:disabled {
+      background: rgba(124,155,255,.12);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .footer { margin-top: 20px; font-size: 12px; color: var(--muted); }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* Confetti burst (simple CSS particles) */
+    .confetti-area {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      opacity: 0;
+    }
+    .dot.burst {
+      animation: confetti-fall 1.2s ease-out forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { opacity: 1; transform: translate(var(--dx0), var(--dy0)) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx1), var(--dy1)) scale(.3); }
+    }
+  </style>
+</head>
+<body>
+<div class="confetti-area" id="confetti"></div>
+<main class="wrap">
+  <div class="card">
+    <h1>🍽️ 今晚誰洗碗？</h1>
+    <p class="sub">擲硬幣決定，沒得賴帳</p>
+
+    <div class="coin-wrap">
+      <div class="coin" id="coin">
+        <div class="face face-front">
+          <span class="face-emoji">🙋</span>
+          <span class="face-label">你洗</span>
+        </div>
+        <div class="face face-back">
+          <span class="face-emoji">🙋</span>
+          <span class="face-label">對方洗</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-wrap">
+      <div class="result" id="result"></div>
+    </div>
+
+    <button class="btn" id="btn">擲硬幣！</button>
+
+    <div class="footer" style="margin-top:20px">
+      <a href="https://clare-le.github.io">← 返回首頁</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  const coin    = document.getElementById('coin');
+  const btn     = document.getElementById('btn');
+  const result  = document.getElementById('result');
+  const confetti= document.getElementById('confetti');
+
+  let spinning = false;
+
+  btn.addEventListener('click', () => {
+    if (spinning) return;
+    spinning = true;
+    btn.disabled = true;
+
+    // Reset result
+    result.classList.remove('show','you','them');
+    result.textContent = '';
+
+    // Pick outcome
+    const youWash = Math.random() < 0.5;
+
+    // Fast spin phase (randomize duration 1.5~2.5s)
+    const fastMs = 1500 + Math.random() * 1000;
+    coin.style.setProperty('--spin-dur', '0.12s');
+    coin.classList.remove('landing');
+    coin.classList.add('spinning');
+
+    setTimeout(() => {
+      // Switch to landing animation
+      coin.classList.remove('spinning');
+
+      // Final rotation: land on front (you) = multiple of 360, back (them) = 180 + multiple of 360
+      // We do a big spin + land
+      const spins = 6 + Math.floor(Math.random() * 4); // 6-9 full rotations
+      const finalRot = spins * 360 + (youWash ? 0 : 180);
+      coin.style.setProperty('--final-rot', finalRot + 'deg');
+      coin.classList.add('landing');
+
+      // Show result after landing (1.4s)
+      setTimeout(() => {
+        if (youWash) {
+          result.textContent = '😅 今晚你洗碗！';
+          result.className = 'result you';
+        } else {
+          result.textContent = '😎 對方洗碗！';
+          result.className = 'result them';
+        }
+        result.classList.add('show');
+        burst(youWash ? '#ff7a7a' : '#59d0ff');
+
+        btn.textContent = '再擲一次';
+        btn.disabled = false;
+        spinning = false;
+      }, 1500);
+    }, fastMs);
+  });
+
+  function burst(color) {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const colors = [color, '#ffd060', '#b8c0e0', '#7c9bff'];
+    for (let i = 0; i < 28; i++) {
+      const el = document.createElement('div');
+      el.className = 'dot';
+      const angle = (Math.random() * Math.PI * 2);
+      const dist  = 60 + Math.random() * 140;
+      const dx0 = (Math.random() - .5) * 20 + 'px';
+      const dy0 = (Math.random() - .5) * 20 + 'px';
+      const dx1 = Math.cos(angle) * dist + 'px';
+      const dy1 = Math.sin(angle) * dist + 'px';
+      el.style.cssText = `
+        left:${cx}px; top:${cy}px;
+        background:${colors[i % colors.length]};
+        --dx0:${dx0}; --dy0:${dy0};
+        --dx1:${dx1}; --dy1:${dy1};
+      `;
+      confetti.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('burst'));
+      setTimeout(() => el.remove(), 1300);
+    }
+  }
+</script>
+</body>
+</html>
