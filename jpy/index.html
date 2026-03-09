@@ -165,7 +165,7 @@
     </div>
 
     <div class="footer">
-      匯率來源：<a href="https://www.frankfurter.app" target="_blank">Frankfurter</a>（每日更新）・
+      匯率來源：<a href="https://www.exchangerate-api.com" target="_blank">ExchangeRate-API</a>（每日更新）・
       <a href="https://clare-le.github.io">← 返回首頁</a>
     </div>
   </div>
@@ -186,8 +186,9 @@
 
   async function fetchRate() {
     try {
-      const res = await fetch('https://api.frankfurter.app/latest?from=JPY&to=TWD');
+      const res = await fetch('https://open.er-api.com/v6/latest/JPY');
       const data = await res.json();
+      if (data.result !== 'success') throw new Error('api error');
       rate = data.rates.TWD;
       dot.className = 'dot';
       rateText.innerHTML = `1 JPY ≈ <span class="rate-val">${rate.toFixed(4)}</span> TWD &nbsp;·&nbsp; 1 TWD ≈ <span class="rate-val">${(1/rate).toFixed(2)}</span> JPY`;
