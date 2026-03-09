@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>日圓換算 JPY ↔ TWD</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a31;
+      --card2: #1a2550;
+      --text: #eef2ff;
+      --muted: #b8c0e0;
+      --accent: #7c9bff;
+      --accent2: #59d0ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: radial-gradient(circle at 20% 0%, #182445 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .wrap { width: min(480px, 100%); }
+    .card {
+      background: linear-gradient(135deg, var(--card), var(--card2));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 4px; font-size: 24px; }
+    .rate-bar {
+      margin: 0 0 22px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rate-val { color: var(--accent2); font-weight: 700; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4caf50; flex-shrink: 0;
+    }
+    .dot.loading { background: var(--muted); animation: pulse 1s infinite; }
+    .dot.error   { background: #f44336; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .field { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .currency {
+      position: absolute; left: 14px;
+      font-size: 14px; font-weight: 700; color: var(--accent);
+      pointer-events: none; user-select: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 13px 14px 13px 62px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(124,155,255,.35);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color .15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { border-color: rgba(89,208,255,.6); }
+
+    .swap-btn {
+      display: block;
+      margin: 0 auto 16px;
+      background: rgba(124,155,255,.15);
+      border: 1px solid rgba(124,155,255,.4);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 36px;
+      text-align: center;
+      color: var(--text);
+      transition: background .15s, transform .15s;
+    }
+    .swap-btn:hover { background: rgba(89,208,255,.2); transform: rotate(180deg); }
+
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .preset {
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(124,155,255,.12);
+      border: 1px solid rgba(124,155,255,.3);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: .15s;
+    }
+    .preset:hover { background: rgba(89,208,255,.18); color: var(--text); }
+
+    .footer { margin-top: 20px; font-size: 12px; color: var(--muted); text-align: center; }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="card">
+    <h1>🇯🇵 日圓換算</h1>
+    <div class="rate-bar">
+      <span class="dot loading" id="dot"></span>
+      <span id="rate-text">載入匯率中…</span>
+    </div>
+
+    <div class="field">
+      <label>日圓 JPY</label>
+      <div class="input-wrap">
+        <span class="currency">¥</span>
+        <input type="number" id="jpy" placeholder="0" min="0" />
+      </div>
+    </div>
+
+    <button class="swap-btn" id="swap" title="互換">⇅</button>
+
+    <div class="field">
+      <label>台幣 TWD</label>
+      <div class="input-wrap">
+        <span class="currency">NT$</span>
+        <input type="number" id="twd" placeholder="0" min="0" />
+      </div>
+    </div>
+
+    <div class="presets" id="presets">
+      <!-- 動態插入 JPY 快選 -->
+    </div>
+
+    <div class="footer">
+      匯率來源：<a href="https://www.frankfurter.app" target="_blank">Frankfurter</a>（每日更新）・
+      <a href="https://clare-le.github.io">← 返回首頁</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  const jpyInput = document.getElementById('jpy');
+  const twdInput = document.getElementById('twd');
+  const dot      = document.getElementById('dot');
+  const rateText = document.getElementById('rate-text');
+  const presetsEl= document.getElementById('presets');
+
+  let rate = null;   // 1 JPY = ? TWD
+  let lastEdited = 'jpy';
+
+  async function fetchRate() {
+    try {
+      const res = await fetch('https://api.frankfurter.app/latest?from=JPY&to=TWD');
+      const data = await res.json();
+      rate = data.rates.TWD;
+      dot.className = 'dot';
+      rateText.innerHTML = `1 JPY ≈ <span class="rate-val">${rate.toFixed(4)}</span> TWD &nbsp;·&nbsp; 1 TWD ≈ <span class="rate-val">${(1/rate).toFixed(2)}</span> JPY`;
+      buildPresets();
+    } catch {
+      dot.className = 'dot error';
+      rateText.textContent = '匯率載入失敗，請重新整理';
+    }
+  }
+
+  function buildPresets() {
+    const amounts = [1000, 5000, 10000, 30000, 50000, 100000];
+    presetsEl.innerHTML = '';
+    amounts.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = 'preset';
+      btn.textContent = `¥${a.toLocaleString()}`;
+      btn.onclick = () => { jpyInput.value = a; calc('jpy'); };
+      presetsEl.appendChild(btn);
+    });
+  }
+
+  function calc(from) {
+    if (!rate) return;
+    if (from === 'jpy') {
+      const v = parseFloat(jpyInput.value);
+      twdInput.value = isNaN(v) ? '' : (v * rate).toFixed(0);
+    } else {
+      const v = parseFloat(twdInput.value);
+      jpyInput.value = isNaN(v) ? '' : (v / rate).toFixed(0);
+    }
+  }
+
+  jpyInput.addEventListener('input', () => { lastEdited = 'jpy'; calc('jpy'); });
+  twdInput.addEventListener('input', () => { lastEdited = 'twd'; calc('twd'); });
+
+  document.getElementById('swap').addEventListener('click', () => {
+    [jpyInput.value, twdInput.value] = [twdInput.value, jpyInput.value];
+    lastEdited = lastEdited === 'jpy' ? 'twd' : 'jpy';
+    calc(lastEdited);
+  });
+
+  fetchRate();
+</script>
+</body>
+</html>
