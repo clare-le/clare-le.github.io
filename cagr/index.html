@@ -177,7 +177,7 @@
     const e = parseFloat(endEl.value);
     const y = parseFloat(yearsEl.value);
 
-    if (!s || !e || !y || s <= 0 || y <= 0) {
+    if (isNaN(s) || isNaN(e) || isNaN(y) || s <= 0 || e <= 0 || y <= 0) {
       resultEl.textContent = '— %';
       resultEl.className = 'result-value empty';
       formulaEl.textContent = '';
