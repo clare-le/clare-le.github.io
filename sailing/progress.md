@@ -31,3 +31,6 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Real-device direction correction: removing both side structures left the cockpit visually open. Added solid tapered mahogany cockpit side panels with flush leather top trim, avoiding detached rail geometry.
 - Iterated the new side panels from vertical planes to inward-sloped surfaces so they have visible width from the helm; narrowed and darkened the leather trim after desktop review.
 - Verified the filled cockpit at 393 x 852 and 1280 x 720 with working throttle/steering and no browser errors.
+- Rebuilt the cockpit from the shared-boundary prompt: dashboard, floor, both side walls, and both top trims now use one indexed `BufferGeometry` with shared seam vertices and material groups instead of overlapping independent meshes.
+- Extended the same floor and side-wall boundary vertices beneath the camera so the cockpit remains visually closed at the bottom edge.
+- Verified the connected shell at 375 x 667, 393 x 852, and 1280 x 720. Acceleration and both steering directions update correctly, with no browser errors.

@@ -288,49 +288,50 @@ centerStripeGeo.computeVertexNormals();
 const centerStripe = new THREE.Mesh(centerStripeGeo, creamStripeMaterial);
 boat.add(centerStripe);
 
-// 4. Cockpit Floor & Side Walls
-const cockpitFloor = new THREE.Mesh(
-  new THREE.BoxGeometry(1.1, 0.16, 1.1),
-  darkCockpitMaterial,
+// 4. Continuous cockpit shell: dashboard, sides, floor, and edge trim.
+const cockpitShellGeometry = new THREE.BufferGeometry();
+cockpitShellGeometry.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      -0.6, 0.82, -0.3,  // 0 front-left outer top
+      0.6, 0.82, -0.3,   // 1 front-right outer top
+      -0.48, 0.5, -0.05, // 2 front-left floor seam
+      0.48, 0.5, -0.05,  // 3 front-right floor seam
+      -0.68, 0.56, 1.5,  // 4 rear-left outer top
+      0.68, 0.56, 1.5,   // 5 rear-right outer top
+      -0.46, 0.44, 1.5,  // 6 rear-left floor seam
+      0.46, 0.44, 1.5,   // 7 rear-right floor seam
+      -0.54, 0.77, -0.26, // 8 front-left inner trim
+      -0.54, 0.51, 1.48, // 9 rear-left inner trim
+      0.54, 0.77, -0.26, // 10 front-right inner trim
+      0.54, 0.51, 1.48,  // 11 rear-right inner trim
+    ],
+    3,
+  ),
 );
-cockpitFloor.position.set(0, 0.44, 0.22);
-boat.add(cockpitFloor);
-
-[-1, 1].forEach((side) => {
-  const panelGeometry = new THREE.BufferGeometry();
-  panelGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(
-      [
-        side * 0.6, 0.69, -0.31,
-        side * 0.62, 0.57, 0.77,
-        side * 0.48, 0.34, -0.31,
-        side * 0.46, 0.3, 0.77,
-      ],
-      3,
-    ),
-  );
-  panelGeometry.setIndex([0, 1, 2, 1, 3, 2]);
-  panelGeometry.computeVertexNormals();
-  boat.add(new THREE.Mesh(panelGeometry, cockpitSideMaterial));
-
-  const trimGeometry = new THREE.BufferGeometry();
-  trimGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(
-      [
-        side * 0.6, 0.7, -0.31,
-        side * 0.62, 0.58, 0.77,
-        side * 0.55, 0.66, -0.31,
-        side * 0.55, 0.54, 0.77,
-      ],
-      3,
-    ),
-  );
-  trimGeometry.setIndex([0, 1, 2, 1, 3, 2]);
-  trimGeometry.computeVertexNormals();
-  boat.add(new THREE.Mesh(trimGeometry, leatherCockpitMaterial));
-});
+cockpitShellGeometry.setIndex([
+  0, 2, 1, 1, 2, 3,       // dashboard
+  0, 4, 2, 4, 6, 2,       // left side
+  1, 3, 5, 5, 3, 7,       // right side
+  2, 6, 3, 6, 7, 3,       // floor
+  0, 8, 4, 4, 8, 9,       // left trim
+  1, 5, 10, 5, 11, 10,    // right trim
+]);
+cockpitShellGeometry.addGroup(0, 6, 0);
+cockpitShellGeometry.addGroup(6, 6, 1);
+cockpitShellGeometry.addGroup(12, 6, 1);
+cockpitShellGeometry.addGroup(18, 6, 2);
+cockpitShellGeometry.addGroup(24, 6, 3);
+cockpitShellGeometry.addGroup(30, 6, 3);
+cockpitShellGeometry.computeVertexNormals();
+const cockpitShell = new THREE.Mesh(cockpitShellGeometry, [
+  mahoganyMaterial,
+  cockpitSideMaterial,
+  darkCockpitMaterial,
+  leatherCockpitMaterial,
+]);
+boat.add(cockpitShell);
 
 // Chrome Bow Stem Guard
 const bowStemCap = new THREE.Mesh(
@@ -425,19 +426,11 @@ windshieldGroup.add(mirrorBody);
 boat.add(windshieldGroup);
 
 // 7. Dashboard & Instrument Panel
-const dashFascia = new THREE.Mesh(
-  new THREE.BoxGeometry(0.96, 0.22, 0.14),
-  mahoganyMaterial,
-);
-dashFascia.position.set(0, 0.73, -0.16);
-dashFascia.rotation.x = -0.32;
-boat.add(dashFascia);
-
 const dashLeatherRoll = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.03, 0.03, 0.98, 16),
+  new THREE.CylinderGeometry(0.026, 0.026, 1.12, 16),
   leatherCockpitMaterial,
 );
-dashLeatherRoll.position.set(0, 0.83, -0.11);
+dashLeatherRoll.position.set(0, 0.815, -0.265);
 dashLeatherRoll.rotation.z = Math.PI / 2;
 boat.add(dashLeatherRoll);
 
@@ -484,19 +477,19 @@ function createGauge(radius) {
 
 // Center Speedometer (Knots)
 const speedGauge = createGauge(0.062);
-speedGauge.group.position.set(0, 0.755, -0.08);
+speedGauge.group.position.set(0, 0.755, -0.205);
 speedGauge.group.rotation.x = -0.32;
 boat.add(speedGauge.group);
 
 // Left Tachometer
 const rpmGauge = createGauge(0.045);
-rpmGauge.group.position.set(-0.17, 0.735, -0.08);
+rpmGauge.group.position.set(-0.17, 0.735, -0.19);
 rpmGauge.group.rotation.x = -0.32;
 boat.add(rpmGauge.group);
 
 // Right Marine Heading Gauge
 const headingGauge = createGauge(0.045);
-headingGauge.group.position.set(0.17, 0.735, -0.08);
+headingGauge.group.position.set(0.17, 0.735, -0.19);
 headingGauge.group.rotation.x = -0.32;
 boat.add(headingGauge.group);
 
@@ -505,12 +498,12 @@ const throttleBase = new THREE.Mesh(
   new THREE.CapsuleGeometry(0.038, 0.075, 4, 10),
   chromeMaterial,
 );
-throttleBase.position.set(0.35, 0.69, -0.05);
+throttleBase.position.set(0.35, 0.69, -0.17);
 throttleBase.rotation.x = -0.3;
 boat.add(throttleBase);
 
 const throttleLever = new THREE.Group();
-throttleLever.position.set(0.35, 0.71, -0.05);
+throttleLever.position.set(0.35, 0.71, -0.17);
 const leverArm = new THREE.Mesh(
   new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8),
   chromeMaterial,
