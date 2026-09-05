@@ -133,20 +133,22 @@ const goldBrassMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.88,
 });
 const leatherCockpitMaterial = new THREE.MeshStandardMaterial({
-  color: 0xbe8b58, // Saddle tan leather coaming
-  roughness: 0.68,
+  color: 0xd3ad78,
+  roughness: 0.72,
   metalness: 0.02,
 });
 const darkCockpitMaterial = new THREE.MeshStandardMaterial({
-  color: 0x1c130d,
-  roughness: 0.84,
+  color: 0x45251e,
+  roughness: 0.8,
+  emissive: 0x130806,
+  emissiveIntensity: 0.18,
 });
 const glassMaterial = new THREE.MeshStandardMaterial({
-  color: 0xa8eeff,
+  color: 0x9bdceb,
   transparent: true,
-  opacity: 0.34,
-  roughness: 0.06,
-  metalness: 0.18,
+  opacity: 0.22,
+  roughness: 0.14,
+  metalness: 0.08,
   side: THREE.DoubleSide,
 });
 
@@ -287,40 +289,6 @@ const cockpitFloor = new THREE.Mesh(
 cockpitFloor.position.set(0, 0.44, 0.22);
 boat.add(cockpitFloor);
 
-// Cockpit Padded Leather Coaming
-const coamingLeft = new THREE.Mesh(
-  new THREE.BoxGeometry(0.12, 0.14, 0.95),
-  leatherCockpitMaterial,
-);
-coamingLeft.position.set(-0.54, 0.73, 0.15);
-boat.add(coamingLeft);
-
-const coamingRight = new THREE.Mesh(
-  new THREE.BoxGeometry(0.12, 0.14, 0.95),
-  leatherCockpitMaterial,
-);
-coamingRight.position.set(0.54, 0.73, 0.15);
-boat.add(coamingRight);
-
-// 5. Chrome Gunwale Rub Rails
-[
-  [new THREE.Vector3(-0.62, 0.70, 0.45), new THREE.Vector3(-0.35, 0.67, -1.95), new THREE.Vector3(0, 0.64, -2.55)],
-  [new THREE.Vector3(0.62, 0.70, 0.45), new THREE.Vector3(0.35, 0.67, -1.95), new THREE.Vector3(0, 0.64, -2.55)],
-].forEach((points) => {
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const start = points[i];
-    const end = points[i + 1];
-    const dir = new THREE.Vector3().subVectors(end, start);
-    const rail = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.022, 0.022, dir.length(), 8),
-      chromeMaterial,
-    );
-    rail.position.copy(start).add(end).multiplyScalar(0.5);
-    rail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-    boat.add(rail);
-  }
-});
-
 // Chrome Bow Stem Guard
 const bowStemCap = new THREE.Mesh(
   new THREE.CylinderGeometry(0.028, 0.04, 0.32, 8),
@@ -378,7 +346,7 @@ for (let i = 0; i < framePoints.length - 1; i += 1) {
   const p2 = framePoints[i + 1];
   const dir = new THREE.Vector3().subVectors(p2, p1);
   const seg = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.012, dir.length(), 8),
+    new THREE.CylinderGeometry(0.009, 0.009, dir.length(), 8),
     chromeMaterial,
   );
   seg.position.copy(p1).add(p2).multiplyScalar(0.5);
@@ -391,7 +359,7 @@ const centerPillarP1 = new THREE.Vector3(0, 0.04, -0.04);
 const centerPillarP2 = new THREE.Vector3(0, 0.32, 0.08);
 const centerDir = new THREE.Vector3().subVectors(centerPillarP2, centerPillarP1);
 const centerPillar = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.01, 0.01, centerDir.length(), 8),
+  new THREE.CylinderGeometry(0.0075, 0.0075, centerDir.length(), 8),
   chromeMaterial,
 );
 centerPillar.position.copy(centerPillarP1).add(centerPillarP2).multiplyScalar(0.5);
@@ -432,10 +400,13 @@ boat.add(dashLeatherRoll);
 
 // 3 Classic Chrome Gauges
 const gaugeFaceMat = new THREE.MeshStandardMaterial({
-  color: 0x121820,
-  roughness: 0.9,
+  color: 0x17120f,
+  roughness: 0.86,
+  emissive: 0x241006,
+  emissiveIntensity: 0.28,
 });
-const gaugeNeedleMat = new THREE.MeshBasicMaterial({ color: 0xff4818 });
+const gaugeNeedleMat = new THREE.MeshBasicMaterial({ color: 0xff5a32 });
+const gaugeTickMat = new THREE.MeshBasicMaterial({ color: 0xffe2a6 });
 
 function createGauge(radius) {
   const group = new THREE.Group();
@@ -452,7 +423,7 @@ function createGauge(radius) {
   group.add(face);
   const dialTicks = new THREE.Mesh(
     new THREE.RingGeometry(radius * 0.68, radius * 0.76, 24),
-    new THREE.MeshBasicMaterial({ color: 0xebf2f8 }),
+    gaugeTickMat,
   );
   dialTicks.position.z = -0.002;
   group.add(dialTicks);
@@ -469,29 +440,30 @@ function createGauge(radius) {
 }
 
 // Center Speedometer (Knots)
-const speedGauge = createGauge(0.054);
-speedGauge.group.position.set(0, 0.75, -0.08);
+const speedGauge = createGauge(0.062);
+speedGauge.group.position.set(0, 0.755, -0.08);
 speedGauge.group.rotation.x = -0.32;
 boat.add(speedGauge.group);
 
 // Left Tachometer
-const rpmGauge = createGauge(0.042);
-rpmGauge.group.position.set(-0.16, 0.73, -0.08);
+const rpmGauge = createGauge(0.045);
+rpmGauge.group.position.set(-0.17, 0.735, -0.08);
 rpmGauge.group.rotation.x = -0.32;
 boat.add(rpmGauge.group);
 
 // Right Marine Heading Gauge
-const headingGauge = createGauge(0.042);
-headingGauge.group.position.set(0.16, 0.73, -0.08);
+const headingGauge = createGauge(0.045);
+headingGauge.group.position.set(0.17, 0.735, -0.08);
 headingGauge.group.rotation.x = -0.32;
 boat.add(headingGauge.group);
 
 // 8. Throttle Quadrant & Dynamic Lever
 const throttleBase = new THREE.Mesh(
-  new THREE.BoxGeometry(0.07, 0.08, 0.12),
+  new THREE.CapsuleGeometry(0.038, 0.075, 4, 10),
   chromeMaterial,
 );
-throttleBase.position.set(0.35, 0.67, -0.05);
+throttleBase.position.set(0.35, 0.69, -0.05);
+throttleBase.rotation.x = -0.3;
 boat.add(throttleBase);
 
 const throttleLever = new THREE.Group();
@@ -512,14 +484,15 @@ boat.add(throttleLever);
 
 // 9. Vintage Luxury 3-Spoke Wooden Steering Wheel (Open-top layout for gauges)
 const wheelAssembly = new THREE.Group();
-wheelAssembly.position.set(0, 0.69, 0.03);
+wheelAssembly.position.set(0, 0.67, 0.03);
 wheelAssembly.rotation.x = -0.22;
+wheelAssembly.scale.setScalar(0.88);
 
 const steeringColumn = new THREE.Mesh(
   new THREE.CylinderGeometry(0.034, 0.042, 0.24, 16),
   chromeMaterial,
 );
-steeringColumn.position.set(0, 0.63, -0.07);
+steeringColumn.position.set(0, 0.61, -0.07);
 steeringColumn.rotation.x = Math.PI / 2 - 0.22;
 boat.add(steeringColumn);
 
@@ -696,8 +669,9 @@ boat.add(bowFlagGroup);
 
 // Classic Red & White Ring Lifebuoy (Hanging inside cockpit side)
 const lifebuoyGroup = new THREE.Group();
-lifebuoyGroup.position.set(-0.48, 0.58, 0.05);
+lifebuoyGroup.position.set(-0.38, 0.56, 0.08);
 lifebuoyGroup.rotation.y = Math.PI / 2;
+lifebuoyGroup.scale.setScalar(0.72);
 const buoyTorus = new THREE.Mesh(
   new THREE.TorusGeometry(0.11, 0.028, 12, 24),
   new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.5 }),

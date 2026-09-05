@@ -25,3 +25,6 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Added dynamic chrome throttle lever that tilts forward under throttle and backward during braking.
 - Added authentic foredeck chrome fittings: dual trumpet air horns, cowl engine vents, deck cleats, teardrop ruby/emerald navigation light, cockpit ring lifebuoy, and a fluttering bow yacht club pennant.
 - Hotfix: renamed the second `speedRatio` variable in the update loop so the upgraded boat scene can load instead of stopping on a duplicate-identifier syntax error.
+- Refined the cockpit hierarchy for mobile: warmer cabin material and leather trim, smaller wheel, larger warm-lit gauges, slimmer windshield frame, rounded throttle base, and an inset lifebuoy.
+- Removed the boxy cockpit-side coaming and raised chrome gunwale rails after viewport review showed they still read as floating sticks.
+- Verified the final cockpit at 393 x 852, 375 x 667, and 1280 x 720; throttle and steering remained functional and no browser errors were captured.
