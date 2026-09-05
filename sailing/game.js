@@ -812,9 +812,10 @@ function update(dt) {
   boat.position.set(state.x, 0.18 + Math.sin(state.time * 2.1) * 0.08, state.z);
   boat.rotation.y = -state.heading;
   boat.rotation.x = Math.sin(state.time * 1.5 + state.speed) * 0.025;
-  const speedRatio = state.speed / throttleSpeeds[throttleSpeeds.length - 1];
+  const boatSpeedRatio =
+    state.speed / throttleSpeeds[throttleSpeeds.length - 1];
   boat.rotation.z =
-    -state.rudder * (0.025 + speedRatio * 0.05) +
+    -state.rudder * (0.025 + boatSpeedRatio * 0.05) +
     Math.sin(state.time * 1.2) * 0.018;
 
   markers.forEach((marker, index) => {

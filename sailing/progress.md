@@ -24,3 +24,4 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Added retro 3-spoke wood-rimmed sports steering wheel with slotted chrome spokes and gold horn button.
 - Added dynamic chrome throttle lever that tilts forward under throttle and backward during braking.
 - Added authentic foredeck chrome fittings: dual trumpet air horns, cowl engine vents, deck cleats, teardrop ruby/emerald navigation light, cockpit ring lifebuoy, and a fluttering bow yacht club pennant.
+- Hotfix: renamed the second `speedRatio` variable in the update loop so the upgraded boat scene can load instead of stopping on a duplicate-identifier syntax error.
