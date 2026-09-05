@@ -82,6 +82,15 @@ canvas {
   font: inherit;
 }
 
+.meter small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(220, 250, 255, 0.82);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 #loading {
   position: absolute;
   inset: 0;

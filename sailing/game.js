@@ -3,17 +3,22 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.m
 const mount = document.querySelector("#scene");
 const speedValue = document.querySelector("#speed");
 const headingValue = document.querySelector("#heading");
+const throttleValue = document.querySelector("#throttle");
+const bearingValue = document.querySelector("#bearing");
 const loading = document.querySelector("#loading");
 
 const controls = {
-  throttle: false,
-  brake: false,
   left: false,
   right: false,
 };
 
+const throttleSpeeds = [0, 1.3, 2.8, 4.5, 6.4, 8.5];
+const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
+
 const telemetry = {
   speed: 0,
+  throttle: 0,
+  targetSpeed: 0,
   heading: 0,
   x: 0,
   z: 0,
@@ -211,6 +216,8 @@ const state = {
   z: 0,
   heading: 0,
   speed: 0,
+  throttleLevel: 0,
+  rudder: 0,
   time: 0,
   lastTelemetry: 0,
 };
@@ -225,19 +232,18 @@ function resize() {
 
 function update(dt) {
   state.time += dt;
-  const acceleration = controls.throttle ? 3.2 : 0;
-  const braking = controls.brake ? 5.1 : 0;
-  const drag = state.speed > 0 ? 0.45 : 0.18;
-  state.speed = clamp(
-    state.speed + acceleration * dt - braking * dt - state.speed * drag * dt,
-    0,
-    8.5,
-  );
+  const targetSpeed = throttleSpeeds[state.throttleLevel];
+  const speedRate = targetSpeed > state.speed ? 2.15 : 2.8;
+  state.speed += clamp(targetSpeed - state.speed, -speedRate * dt, speedRate * dt);
 
   const turnInput = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
-  state.heading += turnInput * (0.56 + state.speed * 0.075) * dt;
+  const rudderResponse = 1 - Math.exp(-6 * dt);
+  state.rudder = THREE.MathUtils.lerp(state.rudder, turnInput, rudderResponse);
+  const turnAuthority = clamp(state.speed / 1.1, 0, 1);
+  state.heading +=
+    state.rudder * (0.38 + state.speed * 0.045) * turnAuthority * dt;
 
-  const wheelTarget = -turnInput * 0.82;
+  const wheelTarget = -state.rudder * 0.82;
   const wheelResponse = 1 - Math.exp(-10 * dt);
   wheelAssembly.rotation.z = THREE.MathUtils.lerp(
     wheelAssembly.rotation.z,
@@ -268,7 +274,10 @@ function update(dt) {
   boat.position.set(state.x, 0.18 + Math.sin(state.time * 2.1) * 0.08, state.z);
   boat.rotation.y = -state.heading;
   boat.rotation.x = Math.sin(state.time * 1.5 + state.speed) * 0.025;
-  boat.rotation.z = -turnInput * 0.07 + Math.sin(state.time * 1.2) * 0.018;
+  const speedRatio = state.speed / throttleSpeeds[throttleSpeeds.length - 1];
+  boat.rotation.z =
+    -state.rudder * (0.025 + speedRatio * 0.05) +
+    Math.sin(state.time * 1.2) * 0.018;
 
   markers.forEach((marker, index) => {
     marker.position.y = 0.24 + Math.sin((state.time + index * 0.7) * 1.6) * 0.12;
@@ -287,6 +296,8 @@ function update(dt) {
   );
 
   telemetry.speed = Number(state.speed.toFixed(1));
+  telemetry.throttle = state.throttleLevel;
+  telemetry.targetSpeed = targetSpeed;
   telemetry.heading =
     Math.round((((state.heading * 180) / Math.PI) % 360 + 360) % 360) % 360;
   telemetry.x = Number(state.x.toFixed(1));
@@ -295,7 +306,9 @@ function update(dt) {
   if (state.time - state.lastTelemetry > 0.12) {
     state.lastTelemetry = state.time;
     speedValue.textContent = telemetry.speed.toFixed(1);
+    throttleValue.textContent = String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
+    bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
   }
 }
 
@@ -312,9 +325,18 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
-function setControl(name, active, button) {
+function setSteering(name, active, button) {
   controls[name] = active;
   button?.classList.toggle("active", active);
+}
+
+function adjustThrottle(delta) {
+  state.throttleLevel = clamp(
+    state.throttleLevel + delta,
+    0,
+    throttleSpeeds.length - 1,
+  );
+  throttleValue.textContent = String(state.throttleLevel);
 }
 
 document.querySelectorAll("[data-control]").forEach((button) => {
@@ -322,10 +344,21 @@ document.querySelectorAll("[data-control]").forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
-    setControl(name, true, button);
+    if (name === "left" || name === "right") {
+      setSteering(name, true, button);
+      return;
+    }
+    adjustThrottle(name === "throttle" ? 1 : -1);
+    button.classList.add("active");
   });
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
-    button.addEventListener(eventName, () => setControl(name, false, button));
+    button.addEventListener(eventName, () => {
+      if (name === "left" || name === "right") {
+        setSteering(name, false, button);
+      } else {
+        button.classList.remove("active");
+      }
+    });
   });
   button.addEventListener("contextmenu", (event) => event.preventDefault());
 });
@@ -342,15 +375,22 @@ function releaseControls() {
 function onKey(event, pressed) {
   const key = event.key.toLowerCase();
   const mapping = {
-    arrowup: "throttle",
-    w: "throttle",
-    arrowdown: "brake",
-    s: "brake",
     arrowleft: "left",
     a: "left",
     arrowright: "right",
     d: "right",
   };
+  const throttleDelta =
+    key === "arrowup" || key === "w"
+      ? 1
+      : key === "arrowdown" || key === "s"
+        ? -1
+        : 0;
+  if (throttleDelta) {
+    event.preventDefault();
+    if (pressed && !event.repeat) adjustThrottle(throttleDelta);
+    return;
+  }
   const control = mapping[key];
   if (control) {
     event.preventDefault();
