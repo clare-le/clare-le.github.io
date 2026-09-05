@@ -138,15 +138,24 @@ deck.position.set(0, 0.52, 0.28);
 boat.add(deck);
 
 const railMaterial = new THREE.MeshStandardMaterial({
-  color: 0xd8b07a,
-  roughness: 0.66,
+  color: 0x875033,
+  roughness: 0.74,
 });
-[-0.88, 0.88].forEach((x) => {
+
+[
+  [new THREE.Vector3(-0.56, 0.69, 0.08), new THREE.Vector3(-0.055, 0.635, -2.2)],
+  [new THREE.Vector3(0.56, 0.69, 0.08), new THREE.Vector3(0.055, 0.635, -2.2)],
+].forEach(([start, end]) => {
+  const direction = new THREE.Vector3().subVectors(end, start);
   const rail = new THREE.Mesh(
-    new THREE.BoxGeometry(0.07, 0.12, 2.25),
+    new THREE.BoxGeometry(0.065, 0.055, direction.length()),
     railMaterial,
   );
-  rail.position.set(x * 0.68, 0.76, -0.18);
+  rail.position.copy(start).add(end).multiplyScalar(0.5);
+  rail.quaternion.setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    direction.normalize(),
+  );
   boat.add(rail);
 });
 

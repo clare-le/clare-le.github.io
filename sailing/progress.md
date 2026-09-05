@@ -8,3 +8,6 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Verified the homepage on a 390x844 mobile viewport: `航海小英雄` is the seventh and final link, and the footer date is `2026-09-05`.
 - Verified the complete click-through to `/sailing/`, nonblank WebGL output, acceleration, braking, left/right steering, responsive canvas sizing, and zero captured browser errors.
 - Next: tune steering feel and cockpit proportions from real iPhone Safari feedback.
+- Real iPhone Safari feedback: the original parallel side rails looked like two sticks projecting away from the hull.
+- Changed both rails into low, dark wooden gunwales that follow the narrowing edges of the bow; sailing controls and camera remain unchanged.
+- Verified at 393 x 852 mobile portrait and 1280 x 720 desktop: gunwales remain aligned with the bow, controls respond and release normally, and no console errors were reported.
