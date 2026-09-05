@@ -14,3 +14,13 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Started the driving-feel prototype: persistent 0-5 throttle steps, speed-dependent steering, smoothed rudder/wheel response, and clearer speed/throttle/heading HUD labels.
 - Verified real pointer input through the full sequence: throttle up to level 3, hold left, release, hold right, release, then throttle down to level 2; final target speed was 2.8 kn with no stuck controls or console errors.
 - Verified layouts at 375 x 667, 393 x 852, and 1280 x 720. HUD now shows speed, throttle step, heading degrees, and an eight-point Chinese bearing.
+
+## 2026-09-05
+
+- Upgraded boat model to a classic vintage wooden runabout yacht (Riva / Chris-Craft retro style).
+- Implemented deep polished mahogany topsides with a V-bottom marine navy planing hull and crowned teak foredeck with classic cream racing pinstripe.
+- Added curved wrap-around aero windshield with polished chrome frame, tinted glass, and center chrome rearview mirror.
+- Added detailed dashboard with padded saddle-tan leather coaming, mahogany fascia, and 3 chrome-bezel instrument gauges (speedometer, tachometer, heading) featuring animated sweeping needles.
+- Added retro 3-spoke wood-rimmed sports steering wheel with slotted chrome spokes and gold horn button.
+- Added dynamic chrome throttle lever that tilts forward under throttle and backward during braking.
+- Added authentic foredeck chrome fittings: dual trumpet air horns, cowl engine vents, deck cleats, teardrop ruby/emerald navigation light, cockpit ring lifebuoy, and a fluttering bow yacht club pennant.

@@ -98,104 +98,621 @@ horizon.rotation.x = -Math.PI / 2;
 horizon.position.y = 0.05;
 scene.add(horizon);
 
+// --- VINTAGE WOODEN RUNABOUT YACHT MODEL (Riva / Chris-Craft Style) ---
 const boat = new THREE.Group();
-const bowGeometry = new THREE.BufferGeometry();
-bowGeometry.setAttribute(
+
+// Materials
+const mahoganyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x752b14, // Deep polished mahogany
+  roughness: 0.28,
+  metalness: 0.08,
+});
+const teakDeckMaterial = new THREE.MeshStandardMaterial({
+  color: 0x8e3b1c, // Striped teak foredeck
+  roughness: 0.32,
+  metalness: 0.05,
+});
+const creamStripeMaterial = new THREE.MeshStandardMaterial({
+  color: 0xf6efe2, // Classic racing pinstripe
+  roughness: 0.36,
+  metalness: 0.02,
+});
+const hullNavyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x163248, // Deep marine navy lower hull
+  roughness: 0.42,
+  metalness: 0.06,
+});
+const chromeMaterial = new THREE.MeshStandardMaterial({
+  color: 0xf0f4f8, // Polished chrome metal
+  roughness: 0.12,
+  metalness: 0.95,
+});
+const goldBrassMaterial = new THREE.MeshStandardMaterial({
+  color: 0xdfab34, // Polished brass accents
+  roughness: 0.22,
+  metalness: 0.88,
+});
+const leatherCockpitMaterial = new THREE.MeshStandardMaterial({
+  color: 0xbe8b58, // Saddle tan leather coaming
+  roughness: 0.68,
+  metalness: 0.02,
+});
+const darkCockpitMaterial = new THREE.MeshStandardMaterial({
+  color: 0x1c130d,
+  roughness: 0.84,
+});
+const glassMaterial = new THREE.MeshStandardMaterial({
+  color: 0xa8eeff,
+  transparent: true,
+  opacity: 0.34,
+  roughness: 0.06,
+  metalness: 0.18,
+  side: THREE.DoubleSide,
+});
+
+// 1. Lower Planing V-Hull
+const lowerHullGeo = new THREE.BufferGeometry();
+lowerHullGeo.setAttribute(
   "position",
   new THREE.Float32BufferAttribute(
     [
-      -0.58, 0.64, 0.1,
-      0.58, 0.64, 0.1,
-      0, 0.58, -2.35,
-      -0.49, 0.27, 0.1,
-      0.49, 0.27, 0.1,
-      0, 0.31, -2.22,
+      // Cockpit bottom edge: left, center keel, right
+      -0.56, 0.22, 0.45,
+      0, 0.08, 0.45,
+      0.56, 0.22, 0.45,
+      // Mid hull
+      -0.54, 0.25, -0.9,
+      0, 0.1, -0.9,
+      0.54, 0.25, -0.9,
+      // Bow entry / stem
+      -0.22, 0.32, -2.2,
+      0, 0.18, -2.45,
+      0.22, 0.32, -2.2,
+      // Forefoot tip
+      0, 0.35, -2.55,
     ],
     3,
   ),
 );
-bowGeometry.setIndex([
-  0, 1, 2,
-  3, 4, 5,
-  0, 3, 5,
-  0, 5, 2,
-  1, 2, 5,
-  1, 5, 4,
-  0, 1, 4,
-  0, 4, 3,
+lowerHullGeo.setIndex([
+  // Cockpit to Mid
+  0, 1, 4,  0, 4, 3,
+  1, 2, 5,  1, 5, 4,
+  // Mid to Bow
+  3, 4, 7,  3, 7, 6,
+  4, 5, 8,  4, 8, 7,
+  // Bow to Forefoot
+  6, 7, 9,
+  7, 8, 9,
 ]);
-bowGeometry.computeVertexNormals();
-const bow = new THREE.Mesh(
-  bowGeometry,
-  new THREE.MeshStandardMaterial({
-    color: 0xa95e32,
-    roughness: 0.72,
-    metalness: 0.02,
-  }),
+lowerHullGeo.computeVertexNormals();
+const lowerHull = new THREE.Mesh(lowerHullGeo, hullNavyMaterial);
+boat.add(lowerHull);
+
+// 2. Upper Hull Topsides (Tapered Mahogany Flared Bow)
+const topsideGeo = new THREE.BufferGeometry();
+topsideGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      // Port upper sheer line
+      -0.62, 0.68, 0.45,
+      -0.59, 0.68, -0.85,
+      -0.34, 0.65, -1.95,
+      0, 0.62, -2.55,
+      // Starboard upper sheer line
+      0.62, 0.68, 0.45,
+      0.59, 0.68, -0.85,
+      0.34, 0.65, -1.95,
+      // Lower chine line (matches lower hull)
+      -0.56, 0.22, 0.45,
+      -0.54, 0.25, -0.9,
+      -0.22, 0.32, -2.2,
+      0, 0.35, -2.55,
+      0.56, 0.22, 0.45,
+      0.54, 0.25, -0.9,
+      0.22, 0.32, -2.2,
+    ],
+    3,
+  ),
 );
-boat.add(bow);
+topsideGeo.setIndex([
+  // Port side topsides
+  0, 1, 8,   0, 8, 7,
+  1, 2, 9,   1, 9, 8,
+  2, 3, 10,  2, 10, 9,
+  // Starboard side topsides
+  4, 11, 12, 4, 12, 5,
+  5, 12, 13, 5, 13, 6,
+  6, 13, 10, 6, 10, 3,
+]);
+topsideGeo.computeVertexNormals();
+const topsides = new THREE.Mesh(topsideGeo, mahoganyMaterial);
+boat.add(topsides);
 
-const deck = new THREE.Mesh(
-  new THREE.BoxGeometry(1.18, 0.22, 1.45),
-  new THREE.MeshStandardMaterial({ color: 0x6c3a22, roughness: 0.82 }),
+// 3. Foredeck (Polished Teak Deck with Camber/Crown)
+const foredeckGeo = new THREE.BufferGeometry();
+foredeckGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      // Dashboard edge (z = -0.32)
+      -0.58, 0.69, -0.32,
+      0, 0.74, -0.32,
+      0.58, 0.69, -0.32,
+      // Mid foredeck (z = -1.4)
+      -0.46, 0.67, -1.4,
+      0, 0.71, -1.4,
+      0.46, 0.67, -1.4,
+      // Bow tip (z = -2.55)
+      0, 0.63, -2.55,
+    ],
+    3,
+  ),
 );
-deck.position.set(0, 0.52, 0.28);
-boat.add(deck);
+foredeckGeo.setIndex([
+  0, 1, 4,   0, 4, 3,
+  1, 2, 5,   1, 5, 4,
+  3, 4, 6,
+  4, 5, 6,
+]);
+foredeckGeo.computeVertexNormals();
+const foredeck = new THREE.Mesh(foredeckGeo, teakDeckMaterial);
+boat.add(foredeck);
 
-const railMaterial = new THREE.MeshStandardMaterial({
-  color: 0x875033,
-  roughness: 0.74,
-});
+// Foredeck Center Inlay Stripe
+const centerStripeGeo = new THREE.BufferGeometry();
+centerStripeGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      -0.032, 0.743, -0.32,
+      0.032, 0.743, -0.32,
+      -0.015, 0.633, -2.55,
+      0.015, 0.633, -2.55,
+    ],
+    3,
+  ),
+);
+centerStripeGeo.setIndex([0, 1, 3, 0, 3, 2]);
+centerStripeGeo.computeVertexNormals();
+const centerStripe = new THREE.Mesh(centerStripeGeo, creamStripeMaterial);
+boat.add(centerStripe);
 
+// 4. Cockpit Floor & Side Walls
+const cockpitFloor = new THREE.Mesh(
+  new THREE.BoxGeometry(1.1, 0.16, 1.1),
+  darkCockpitMaterial,
+);
+cockpitFloor.position.set(0, 0.44, 0.22);
+boat.add(cockpitFloor);
+
+// Cockpit Padded Leather Coaming
+const coamingLeft = new THREE.Mesh(
+  new THREE.BoxGeometry(0.12, 0.14, 0.95),
+  leatherCockpitMaterial,
+);
+coamingLeft.position.set(-0.54, 0.73, 0.15);
+boat.add(coamingLeft);
+
+const coamingRight = new THREE.Mesh(
+  new THREE.BoxGeometry(0.12, 0.14, 0.95),
+  leatherCockpitMaterial,
+);
+coamingRight.position.set(0.54, 0.73, 0.15);
+boat.add(coamingRight);
+
+// 5. Chrome Gunwale Rub Rails
 [
-  [new THREE.Vector3(-0.56, 0.69, 0.08), new THREE.Vector3(-0.055, 0.635, -2.2)],
-  [new THREE.Vector3(0.56, 0.69, 0.08), new THREE.Vector3(0.055, 0.635, -2.2)],
-].forEach(([start, end]) => {
-  const direction = new THREE.Vector3().subVectors(end, start);
-  const rail = new THREE.Mesh(
-    new THREE.BoxGeometry(0.065, 0.055, direction.length()),
-    railMaterial,
-  );
-  rail.position.copy(start).add(end).multiplyScalar(0.5);
-  rail.quaternion.setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    direction.normalize(),
-  );
-  boat.add(rail);
+  [new THREE.Vector3(-0.62, 0.70, 0.45), new THREE.Vector3(-0.35, 0.67, -1.95), new THREE.Vector3(0, 0.64, -2.55)],
+  [new THREE.Vector3(0.62, 0.70, 0.45), new THREE.Vector3(0.35, 0.67, -1.95), new THREE.Vector3(0, 0.64, -2.55)],
+].forEach((points) => {
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const start = points[i];
+    const end = points[i + 1];
+    const dir = new THREE.Vector3().subVectors(end, start);
+    const rail = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.022, dir.length(), 8),
+      chromeMaterial,
+    );
+    rail.position.copy(start).add(end).multiplyScalar(0.5);
+    rail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    boat.add(rail);
+  }
 });
 
-const wheelAssembly = new THREE.Group();
-wheelAssembly.position.set(0, 0.86, 0.08);
-const helmMaterial = new THREE.MeshStandardMaterial({
-  color: 0x5a311c,
-  roughness: 0.58,
-  metalness: 0.03,
-});
-wheelAssembly.add(
-  new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.018, 10, 32), helmMaterial),
+// Chrome Bow Stem Guard
+const bowStemCap = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.028, 0.04, 0.32, 8),
+  chromeMaterial,
 );
-for (let i = 0; i < 6; i += 1) {
-  const spoke = new THREE.Mesh(
-    new THREE.BoxGeometry(0.018, 0.29, 0.02),
-    helmMaterial,
+bowStemCap.position.set(0, 0.49, -2.54);
+bowStemCap.rotation.x = -0.3;
+boat.add(bowStemCap);
+
+// 6. Curved Wrap-Around Windshield
+const windshieldGroup = new THREE.Group();
+windshieldGroup.position.set(0, 0.71, -0.32);
+
+const glassGeo = new THREE.BufferGeometry();
+glassGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      // Bottom rim
+      -0.54, 0.02, 0.06,
+      -0.24, 0.04, -0.04,
+      0.24, 0.04, -0.04,
+      0.54, 0.02, 0.06,
+      // Top rim (slanted back towards driver)
+      -0.48, 0.28, 0.16,
+      -0.22, 0.31, 0.09,
+      0.22, 0.31, 0.09,
+      0.48, 0.28, 0.16,
+    ],
+    3,
+  ),
+);
+glassGeo.setIndex([
+  0, 1, 5,  0, 5, 4,
+  1, 2, 6,  1, 6, 5,
+  2, 3, 7,  2, 7, 6,
+]);
+glassGeo.computeVertexNormals();
+const windshieldGlass = new THREE.Mesh(glassGeo, glassMaterial);
+windshieldGroup.add(windshieldGlass);
+
+// Chrome Windshield Frame (Accurately tracing glass brow and pillars)
+const framePoints = [
+  new THREE.Vector3(-0.54, 0.02, 0.06), // left base
+  new THREE.Vector3(-0.48, 0.28, 0.16), // left top corner
+  new THREE.Vector3(-0.22, 0.31, 0.09), // left brow
+  new THREE.Vector3(0, 0.32, 0.08),     // center top
+  new THREE.Vector3(0.22, 0.31, 0.09),  // right brow
+  new THREE.Vector3(0.48, 0.28, 0.16),  // right top corner
+  new THREE.Vector3(0.54, 0.02, 0.06),  // right base
+];
+
+for (let i = 0; i < framePoints.length - 1; i += 1) {
+  const p1 = framePoints[i];
+  const p2 = framePoints[i + 1];
+  const dir = new THREE.Vector3().subVectors(p2, p1);
+  const seg = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012, 0.012, dir.length(), 8),
+    chromeMaterial,
   );
-  spoke.rotation.z = (i * Math.PI) / 6;
-  wheelAssembly.add(spoke);
+  seg.position.copy(p1).add(p2).multiplyScalar(0.5);
+  seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  windshieldGroup.add(seg);
 }
-const hub = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.04, 0.04, 0.05, 16),
-  helmMaterial,
+
+// Center Chrome Support Divider
+const centerPillarP1 = new THREE.Vector3(0, 0.04, -0.04);
+const centerPillarP2 = new THREE.Vector3(0, 0.32, 0.08);
+const centerDir = new THREE.Vector3().subVectors(centerPillarP2, centerPillarP1);
+const centerPillar = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.01, 0.01, centerDir.length(), 8),
+  chromeMaterial,
 );
-hub.rotation.x = Math.PI / 2;
-wheelAssembly.add(hub);
+centerPillar.position.copy(centerPillarP1).add(centerPillarP2).multiplyScalar(0.5);
+centerPillar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), centerDir.normalize());
+windshieldGroup.add(centerPillar);
+
+// Chrome Center Rearview Mirror
+const mirrorStem = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.007, 0.007, 0.04, 8),
+  chromeMaterial,
+);
+mirrorStem.position.set(0, 0.34, 0.08);
+windshieldGroup.add(mirrorStem);
+const mirrorBody = new THREE.Mesh(
+  new THREE.BoxGeometry(0.09, 0.038, 0.015),
+  chromeMaterial,
+);
+mirrorBody.position.set(0, 0.365, 0.08);
+windshieldGroup.add(mirrorBody);
+boat.add(windshieldGroup);
+
+// 7. Dashboard & Instrument Panel
+const dashFascia = new THREE.Mesh(
+  new THREE.BoxGeometry(0.96, 0.22, 0.14),
+  mahoganyMaterial,
+);
+dashFascia.position.set(0, 0.73, -0.16);
+dashFascia.rotation.x = -0.32;
+boat.add(dashFascia);
+
+const dashLeatherRoll = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.03, 0.03, 0.98, 16),
+  leatherCockpitMaterial,
+);
+dashLeatherRoll.position.set(0, 0.83, -0.11);
+dashLeatherRoll.rotation.z = Math.PI / 2;
+boat.add(dashLeatherRoll);
+
+// 3 Classic Chrome Gauges
+const gaugeFaceMat = new THREE.MeshStandardMaterial({
+  color: 0x121820,
+  roughness: 0.9,
+});
+const gaugeNeedleMat = new THREE.MeshBasicMaterial({ color: 0xff4818 });
+
+function createGauge(radius) {
+  const group = new THREE.Group();
+  const bezel = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.012, 10, 24),
+    chromeMaterial,
+  );
+  group.add(bezel);
+  const face = new THREE.Mesh(
+    new THREE.CircleGeometry(radius - 0.004, 24),
+    gaugeFaceMat,
+  );
+  face.position.z = -0.005;
+  group.add(face);
+  const dialTicks = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.68, radius * 0.76, 24),
+    new THREE.MeshBasicMaterial({ color: 0xebf2f8 }),
+  );
+  dialTicks.position.z = -0.002;
+  group.add(dialTicks);
+  const needle = new THREE.Mesh(
+    new THREE.BoxGeometry(0.007, radius * 0.82, 0.005),
+    gaugeNeedleMat,
+  );
+  needle.position.y = (radius * 0.82) / 2;
+  const needlePivot = new THREE.Group();
+  needlePivot.add(needle);
+  needlePivot.position.z = 0.004;
+  group.add(needlePivot);
+  return { group, needlePivot };
+}
+
+// Center Speedometer (Knots)
+const speedGauge = createGauge(0.054);
+speedGauge.group.position.set(0, 0.75, -0.08);
+speedGauge.group.rotation.x = -0.32;
+boat.add(speedGauge.group);
+
+// Left Tachometer
+const rpmGauge = createGauge(0.042);
+rpmGauge.group.position.set(-0.16, 0.73, -0.08);
+rpmGauge.group.rotation.x = -0.32;
+boat.add(rpmGauge.group);
+
+// Right Marine Heading Gauge
+const headingGauge = createGauge(0.042);
+headingGauge.group.position.set(0.16, 0.73, -0.08);
+headingGauge.group.rotation.x = -0.32;
+boat.add(headingGauge.group);
+
+// 8. Throttle Quadrant & Dynamic Lever
+const throttleBase = new THREE.Mesh(
+  new THREE.BoxGeometry(0.07, 0.08, 0.12),
+  chromeMaterial,
+);
+throttleBase.position.set(0.35, 0.67, -0.05);
+boat.add(throttleBase);
+
+const throttleLever = new THREE.Group();
+throttleLever.position.set(0.35, 0.71, -0.05);
+const leverArm = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8),
+  chromeMaterial,
+);
+leverArm.position.y = 0.08;
+throttleLever.add(leverArm);
+const leverKnob = new THREE.Mesh(
+  new THREE.SphereGeometry(0.024, 16, 16),
+  goldBrassMaterial,
+);
+leverKnob.position.y = 0.16;
+throttleLever.add(leverKnob);
+boat.add(throttleLever);
+
+// 9. Vintage Luxury 3-Spoke Wooden Steering Wheel (Open-top layout for gauges)
+const wheelAssembly = new THREE.Group();
+wheelAssembly.position.set(0, 0.69, 0.03);
+wheelAssembly.rotation.x = -0.22;
+
+const steeringColumn = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.034, 0.042, 0.24, 16),
+  chromeMaterial,
+);
+steeringColumn.position.set(0, 0.63, -0.07);
+steeringColumn.rotation.x = Math.PI / 2 - 0.22;
+boat.add(steeringColumn);
+
+const wheelRim = new THREE.Mesh(
+  new THREE.TorusGeometry(0.17, 0.019, 14, 36),
+  mahoganyMaterial,
+);
+wheelAssembly.add(wheelRim);
+
+const wheelHub = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.045, 0.045, 0.036, 20),
+  chromeMaterial,
+);
+wheelHub.rotation.x = Math.PI / 2;
+wheelAssembly.add(wheelHub);
+
+const hornCap = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.03, 0.03, 0.04, 20),
+  goldBrassMaterial,
+);
+hornCap.rotation.x = Math.PI / 2;
+wheelAssembly.add(hornCap);
+
+// Inverted 3-spoke design (down, up-right, up-left) leaving top open for gauges
+[-Math.PI / 2, Math.PI / 6, (5 * Math.PI) / 6].forEach((angle) => {
+  const spokeGroup = new THREE.Group();
+  spokeGroup.rotation.z = angle;
+  const spoke = new THREE.Mesh(
+    new THREE.BoxGeometry(0.026, 0.13, 0.012),
+    chromeMaterial,
+  );
+  spoke.position.y = 0.078;
+  spokeGroup.add(spoke);
+  const hole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.006, 0.006, 0.018, 12),
+    darkCockpitMaterial,
+  );
+  hole.position.y = 0.082;
+  hole.rotation.x = Math.PI / 2;
+  spokeGroup.add(hole);
+  wheelAssembly.add(spokeGroup);
+});
 boat.add(wheelAssembly);
 
-const pedestal = new THREE.Mesh(
-  new THREE.BoxGeometry(0.09, 0.34, 0.08),
-  new THREE.MeshStandardMaterial({ color: 0x7a482a, roughness: 0.7 }),
+// 10. Foredeck Accessories & Hardware
+
+// Teardrop Bow Navigation Light
+const navLightGroup = new THREE.Group();
+navLightGroup.position.set(0, 0.67, -2.35);
+const navHousing = new THREE.Mesh(
+  new THREE.SphereGeometry(0.042, 16, 12),
+  chromeMaterial,
 );
-pedestal.position.set(0, 0.61, 0.09);
-boat.add(pedestal);
+navHousing.scale.set(1, 0.7, 1.8);
+navLightGroup.add(navHousing);
+const redPortLight = new THREE.Mesh(
+  new THREE.SphereGeometry(0.022, 10, 10),
+  new THREE.MeshStandardMaterial({
+    color: 0xff1122,
+    emissive: 0xcc0011,
+    emissiveIntensity: 0.8,
+  }),
+);
+redPortLight.position.set(-0.025, 0.015, -0.02);
+navLightGroup.add(redPortLight);
+const greenStbdLight = new THREE.Mesh(
+  new THREE.SphereGeometry(0.022, 10, 10),
+  new THREE.MeshStandardMaterial({
+    color: 0x00ee55,
+    emissive: 0x009933,
+    emissiveIntensity: 0.8,
+  }),
+);
+greenStbdLight.position.set(0.025, 0.015, -0.02);
+navLightGroup.add(greenStbdLight);
+boat.add(navLightGroup);
+
+// Dual Chrome Trumpet Air Horns
+const hornGroup = new THREE.Group();
+hornGroup.position.set(-0.28, 0.71, -1.05);
+hornGroup.rotation.y = 0.08;
+[-0.03, 0.03].forEach((offsetY, i) => {
+  const hornTube = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012 + i * 0.003, 0.007, 0.22, 10),
+    chromeMaterial,
+  );
+  hornTube.position.set(offsetY * 1.3, 0.02 + offsetY * 0.6, -0.04);
+  hornTube.rotation.x = Math.PI / 2;
+  hornGroup.add(hornTube);
+  const hornBell = new THREE.Mesh(
+    new THREE.ConeGeometry(0.028 + i * 0.004, 0.06, 12),
+    chromeMaterial,
+  );
+  hornBell.position.set(offsetY * 1.3, 0.02 + offsetY * 0.6, -0.15);
+  hornBell.rotation.x = -Math.PI / 2;
+  hornGroup.add(hornBell);
+});
+boat.add(hornGroup);
+
+// Dual Chrome Engine Cowl Vents
+[-0.24, 0.24].forEach((x) => {
+  const vent = new THREE.Mesh(
+    new THREE.SphereGeometry(0.038, 12, 10),
+    chromeMaterial,
+  );
+  vent.position.set(x, 0.71, -0.65);
+  vent.scale.set(0.9, 0.6, 1.4);
+  vent.rotation.x = -0.3;
+  boat.add(vent);
+});
+
+// Chrome Mooring Cleats
+[
+  new THREE.Vector3(-0.32, 0.69, -1.75),
+  new THREE.Vector3(0.32, 0.69, -1.75),
+].forEach((pos) => {
+  const cleat = new THREE.Group();
+  cleat.position.copy(pos);
+  const cleatBase = new THREE.Mesh(
+    new THREE.BoxGeometry(0.02, 0.018, 0.05),
+    chromeMaterial,
+  );
+  cleat.add(cleatBase);
+  const cleatBar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.018, 0.015, 0.11),
+    chromeMaterial,
+  );
+  cleatBar.position.y = 0.015;
+  cleat.add(cleatBar);
+  boat.add(cleat);
+});
+
+// Bow Flagstaff with Fluttering Yacht Club Pennant
+const bowFlagGroup = new THREE.Group();
+bowFlagGroup.position.set(0, 0.64, -2.52);
+const flagPole = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.007, 0.01, 0.36, 8),
+  chromeMaterial,
+);
+flagPole.position.y = 0.18;
+flagPole.rotation.x = -0.18;
+bowFlagGroup.add(flagPole);
+const flagFinial = new THREE.Mesh(
+  new THREE.SphereGeometry(0.016, 10, 10),
+  goldBrassMaterial,
+);
+flagFinial.position.set(0, 0.36, 0.04);
+bowFlagGroup.add(flagFinial);
+
+const pennantGeo = new THREE.BufferGeometry();
+pennantGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(
+    [
+      0, 0.34, 0.03,
+      0, 0.22, 0.01,
+      0.24, 0.28, 0.08,
+    ],
+    3,
+  ),
+);
+pennantGeo.setIndex([0, 1, 2, 0, 2, 1]);
+pennantGeo.computeVertexNormals();
+const pennantMesh = new THREE.Mesh(
+  pennantGeo,
+  new THREE.MeshStandardMaterial({
+    color: 0x1d4e89,
+    roughness: 0.6,
+    side: THREE.DoubleSide,
+  }),
+);
+bowFlagGroup.add(pennantMesh);
+boat.add(bowFlagGroup);
+
+// Classic Red & White Ring Lifebuoy (Hanging inside cockpit side)
+const lifebuoyGroup = new THREE.Group();
+lifebuoyGroup.position.set(-0.48, 0.58, 0.05);
+lifebuoyGroup.rotation.y = Math.PI / 2;
+const buoyTorus = new THREE.Mesh(
+  new THREE.TorusGeometry(0.11, 0.028, 12, 24),
+  new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.5 }),
+);
+lifebuoyGroup.add(buoyTorus);
+for (let b = 0; b < 4; b += 1) {
+  const band = new THREE.Mesh(
+    new THREE.TorusGeometry(0.111, 0.03, 10, 8, Math.PI / 6),
+    new THREE.MeshStandardMaterial({ color: 0xdd2818, roughness: 0.4 }),
+  );
+  band.rotation.z = (b * Math.PI) / 2 - Math.PI / 12;
+  lifebuoyGroup.add(band);
+}
+boat.add(lifebuoyGroup);
+
 scene.add(boat);
 
 const markers = Array.from({ length: 26 }, (_, i) => {
@@ -250,6 +767,27 @@ function update(dt) {
     wheelTarget,
     wheelResponse,
   );
+
+  // Dynamic Throttle Lever (Reflecting 0-5 throttle gear steps)
+  const throttleTarget = -(state.throttleLevel / 5) * 0.48;
+  throttleLever.rotation.x = THREE.MathUtils.lerp(
+    throttleLever.rotation.x,
+    throttleTarget,
+    1 - Math.exp(-8 * dt),
+  );
+
+  // Dynamic Instrument Gauges (Needles)
+  const speedRatio = state.speed / 8.5;
+  speedGauge.needlePivot.rotation.z = -speedRatio * 2.3;
+  rpmGauge.needlePivot.rotation.z =
+    -( (state.throttleLevel / 5) * 0.72 + speedRatio * 0.28 ) * 2.4;
+  headingGauge.needlePivot.rotation.z =
+    -((state.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+  // Fluttering bow pennant flag
+  const flutterFreq = 5.5 + state.speed * 1.4;
+  pennantMesh.rotation.y = Math.sin(state.time * flutterFreq) * 0.22;
+  pennantMesh.rotation.z = Math.cos(state.time * flutterFreq * 0.8) * 0.12;
 
   const forwardX = Math.sin(state.heading);
   const forwardZ = -Math.cos(state.heading);
