@@ -133,9 +133,16 @@ const goldBrassMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.88,
 });
 const leatherCockpitMaterial = new THREE.MeshStandardMaterial({
-  color: 0xd3ad78,
+  color: 0xb88955,
   roughness: 0.72,
   metalness: 0.02,
+  side: THREE.DoubleSide,
+});
+const cockpitSideMaterial = new THREE.MeshStandardMaterial({
+  color: 0x6b2f22,
+  roughness: 0.68,
+  metalness: 0.03,
+  side: THREE.DoubleSide,
 });
 const darkCockpitMaterial = new THREE.MeshStandardMaterial({
   color: 0x45251e,
@@ -288,6 +295,42 @@ const cockpitFloor = new THREE.Mesh(
 );
 cockpitFloor.position.set(0, 0.44, 0.22);
 boat.add(cockpitFloor);
+
+[-1, 1].forEach((side) => {
+  const panelGeometry = new THREE.BufferGeometry();
+  panelGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(
+      [
+        side * 0.6, 0.69, -0.31,
+        side * 0.62, 0.57, 0.77,
+        side * 0.48, 0.34, -0.31,
+        side * 0.46, 0.3, 0.77,
+      ],
+      3,
+    ),
+  );
+  panelGeometry.setIndex([0, 1, 2, 1, 3, 2]);
+  panelGeometry.computeVertexNormals();
+  boat.add(new THREE.Mesh(panelGeometry, cockpitSideMaterial));
+
+  const trimGeometry = new THREE.BufferGeometry();
+  trimGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(
+      [
+        side * 0.6, 0.7, -0.31,
+        side * 0.62, 0.58, 0.77,
+        side * 0.55, 0.66, -0.31,
+        side * 0.55, 0.54, 0.77,
+      ],
+      3,
+    ),
+  );
+  trimGeometry.setIndex([0, 1, 2, 1, 3, 2]);
+  trimGeometry.computeVertexNormals();
+  boat.add(new THREE.Mesh(trimGeometry, leatherCockpitMaterial));
+});
 
 // Chrome Bow Stem Guard
 const bowStemCap = new THREE.Mesh(

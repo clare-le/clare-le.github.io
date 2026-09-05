@@ -28,3 +28,6 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Refined the cockpit hierarchy for mobile: warmer cabin material and leather trim, smaller wheel, larger warm-lit gauges, slimmer windshield frame, rounded throttle base, and an inset lifebuoy.
 - Removed the boxy cockpit-side coaming and raised chrome gunwale rails after viewport review showed they still read as floating sticks.
 - Verified the final cockpit at 393 x 852, 375 x 667, and 1280 x 720; throttle and steering remained functional and no browser errors were captured.
+- Real-device direction correction: removing both side structures left the cockpit visually open. Added solid tapered mahogany cockpit side panels with flush leather top trim, avoiding detached rail geometry.
+- Iterated the new side panels from vertical planes to inward-sloped surfaces so they have visible width from the helm; narrowed and darkened the leather trim after desktop review.
+- Verified the filled cockpit at 393 x 852 and 1280 x 720 with working throttle/steering and no browser errors.
