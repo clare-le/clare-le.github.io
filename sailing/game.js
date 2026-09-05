@@ -338,8 +338,7 @@ const bowStemCap = new THREE.Mesh(
   new THREE.CylinderGeometry(0.028, 0.04, 0.32, 8),
   chromeMaterial,
 );
-bowStemCap.position.set(0, 0.49, -2.54);
-bowStemCap.rotation.x = -0.3;
+bowStemCap.position.set(0, 0.48, -2.55);
 boat.add(bowStemCap);
 
 // 6. Curved Wrap-Around Windshield
@@ -663,34 +662,42 @@ boat.add(hornGroup);
 
 // Bow Flagstaff with Fluttering Yacht Club Pennant
 const bowFlagGroup = new THREE.Group();
-bowFlagGroup.position.set(0, 0.64, -2.52);
+bowFlagGroup.position.set(0, 0.63, -2.55);
+
+const flagSocket = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.022, 0.03, 0.07, 12),
+  goldBrassMaterial,
+);
+flagSocket.position.y = 0.035;
+bowFlagGroup.add(flagSocket);
+
 const flagPole = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.007, 0.01, 0.36, 8),
+  new THREE.CylinderGeometry(0.007, 0.009, 0.34, 10),
   chromeMaterial,
 );
-flagPole.position.y = 0.18;
-flagPole.rotation.x = -0.18;
+flagPole.position.y = 0.22;
 bowFlagGroup.add(flagPole);
+
 const flagFinial = new THREE.Mesh(
   new THREE.SphereGeometry(0.016, 10, 10),
   goldBrassMaterial,
 );
-flagFinial.position.set(0, 0.36, 0.04);
+flagFinial.position.set(0, 0.4, 0);
 bowFlagGroup.add(flagFinial);
 
 const pennantGeo = new THREE.BufferGeometry();
 pennantGeo.setAttribute(
   "position",
-  new THREE.Float32BufferAttribute(
-    [
-      0, 0.34, 0.03,
-      0, 0.22, 0.01,
-      0.24, 0.28, 0.08,
-    ],
-    3,
-  ),
+    new THREE.Float32BufferAttribute(
+      [
+        0, 0.38, 0,
+        0, 0.27, 0,
+        0.24, 0.325, 0,
+      ],
+      3,
+    ),
 );
-pennantGeo.setIndex([0, 1, 2, 0, 2, 1]);
+pennantGeo.setIndex([0, 1, 2]);
 pennantGeo.computeVertexNormals();
 const pennantMesh = new THREE.Mesh(
   pennantGeo,
@@ -794,10 +801,16 @@ function update(dt) {
   headingGauge.needlePivot.rotation.z =
     -((state.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
 
-  // Fluttering bow pennant flag
+  // Keep the pennant root fixed to the pole and animate only its free tip.
   const flutterFreq = 5.5 + state.speed * 1.4;
-  pennantMesh.rotation.y = Math.sin(state.time * flutterFreq) * 0.22;
-  pennantMesh.rotation.z = Math.cos(state.time * flutterFreq * 0.8) * 0.12;
+  const pennantPositions = pennantGeo.attributes.position;
+  pennantPositions.setY(
+    2,
+    0.325 + Math.cos(state.time * flutterFreq * 0.8) * 0.012,
+  );
+  pennantPositions.setZ(2, Math.sin(state.time * flutterFreq) * 0.045);
+  pennantPositions.needsUpdate = true;
+  pennantGeo.computeVertexNormals();
 
   const forwardX = Math.sin(state.heading);
   const forwardZ = -Math.cos(state.heading);

@@ -34,3 +34,4 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Rebuilt the cockpit from the shared-boundary prompt: dashboard, floor, both side walls, and both top trims now use one indexed `BufferGeometry` with shared seam vertices and material groups instead of overlapping independent meshes.
 - Extended the same floor and side-wall boundary vertices beneath the camera so the cockpit remains visually closed at the bottom edge.
 - Verified the connected shell at 375 x 667, 393 x 852, and 1280 x 720. Acceleration and both steering directions update correctly, with no browser errors.
+- Rebuilt the bow flagstaff around one vertical anchor: the stem cap reaches the deck, the socket overlaps the pole base, and the pennant root intersects the pole. Flutter now deforms only the free tip so the attached edge cannot drift away.
