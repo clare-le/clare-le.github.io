@@ -35,7 +35,7 @@ function dialTexture(label, numbers) {
 export function createCargoHelm(materials) {
   const root = new THREE.Group();
   root.name = "cargo-helm";
-  const { metal, seal, floor, accent, screen } = materials;
+  const { metal, seal, floor, accent } = materials;
 
   function gauge(x, radius, label, numbers) {
     const group = new THREE.Group();
@@ -84,15 +84,24 @@ export function createCargoHelm(materials) {
   lever.add(grip);
   root.add(lever);
 
-  const radio = box(root, seal, [0.19, 0.105, 0.045], [-0.52, 0.92, -0.28]);
-  radio.rotation.x = -0.24;
-  box(radio, screen, [0.116, 0.024, 0.006], [-0.018, 0.018, 0.026]);
-  for (const x of [-0.062, 0.057]) {
-    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.018, 12), metal);
-    knob.rotation.x = Math.PI / 2;
-    knob.position.set(x, -0.022, 0.031);
-    radio.add(knob);
-  }
+  const anchorBase = box(root, floor, [0.105, 0.17, 0.07], [-0.53, 0.845, -0.25]);
+  anchorBase.rotation.x = -0.2;
+  const anchorLever = new THREE.Group();
+  anchorLever.name = "anchor-control";
+  anchorLever.position.set(-0.53, 0.88, -0.19);
+  strut(anchorLever, metal, [0, 0, 0], [0, 0.16, 0], 0.009);
+  const anchorGrip = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.035, 4, 10), accent);
+  anchorGrip.position.y = 0.16;
+  anchorGrip.rotation.z = Math.PI / 2;
+  anchorLever.add(anchorGrip);
+  const anchorHit = new THREE.Mesh(
+    new THREE.BoxGeometry(0.17, 0.29, 0.17),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  );
+  anchorHit.name = "anchor-hit";
+  anchorHit.position.y = 0.08;
+  anchorLever.add(anchorHit);
+  root.add(anchorLever);
 
   return {
     root,
@@ -101,6 +110,8 @@ export function createCargoHelm(materials) {
         dt === 0 ? 1 : 1 - Math.exp(-10 * dt));
       lever.rotation.x = THREE.MathUtils.lerp(lever.rotation.x, -input.throttle * 0.48,
         dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
+      anchorLever.rotation.x = THREE.MathUtils.lerp(anchorLever.rotation.x,
+        input.anchor ? -0.48 : 0, dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
       speed.rotation.z = Math.PI * 0.75
         - Math.min(Math.abs(input.speed) / 10, 1) * Math.PI * 1.5;
       rpm.rotation.z = Math.PI * 0.75

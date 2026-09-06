@@ -18,6 +18,7 @@ function validateModel(model) {
     physics?.lengthMeters, physics?.beamMeters, physics?.hullCenterForwardMeters,
     physics?.massKg, physics?.enginePowerKw,
     physics?.maxSpeedKnots, physics?.reverseSpeedKnots, physics?.reverseThrustFactor,
+    physics?.anchorBrakeResponse,
     physics?.propulsionFactor, physics?.decelerationResponse,
     physics?.rudderResponse, physics?.minSteerageKnots, physics?.turnRateAtMax,
     motion?.heave, motion?.heaveFrequency, motion?.pitch, motion?.pitchFrequency,
@@ -27,6 +28,7 @@ function validateModel(model) {
   for (const value of [physics.lengthMeters, physics.beamMeters, physics.massKg,
     physics.enginePowerKw,
     physics.maxSpeedKnots, physics.reverseSpeedKnots, physics.reverseThrustFactor,
+    physics.anchorBrakeResponse,
     physics.propulsionFactor, physics.decelerationResponse,
     physics.rudderResponse, physics.minSteerageKnots, physics.turnRateAtMax]) {
     if (value <= 0) throw new Error("Boat physical values must be positive");

@@ -22,8 +22,14 @@ const cameraLook = {
   pointerId: null,
   startX: 0,
   startYaw: 0,
+  tapPointerId: null,
+  tapStartX: 0,
+  tapStartY: 0,
 };
 const maxCameraYaw = Math.PI / 2;
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+const anchorWorldPosition = new THREE.Vector3();
 
 const knotsToMetersPerSecond = 0.514444;
 const propulsionResponseScale = 24;
@@ -284,6 +290,7 @@ const state = {
   impact: 0,
   collisionCount: 0,
   grounded: false,
+  anchorDeployed: false,
   time: 0,
   lastTelemetry: 0,
 };
@@ -355,12 +362,14 @@ function update(dt) {
   const previousSpeed = state.speed;
   const changingDirection = requestedTargetSpeed !== 0 && state.speed !== 0
     && Math.sign(requestedTargetSpeed) !== Math.sign(state.speed);
-  const movementTarget = changingDirection ? 0 : requestedTargetSpeed;
+  const movementTarget = state.anchorDeployed || changingDirection ? 0 : requestedTargetSpeed;
   const gainingSpeed = Math.abs(movementTarget) > Math.abs(state.speed);
   const propulsion = accelerationResponse(physics)
     * (movementTarget < 0 ? physics.reverseThrustFactor : 1);
   let speedResponse = physics.decelerationResponse;
-  if (changingDirection) {
+  if (state.anchorDeployed) {
+    speedResponse = physics.anchorBrakeResponse;
+  } else if (changingDirection) {
     speedResponse = Math.max(speedResponse, accelerationResponse(physics) * 4);
   } else if (gainingSpeed) {
     speedResponse = propulsion;
@@ -413,6 +422,7 @@ function update(dt) {
       ? -1
       : state.throttleLevel / (physics.throttleCurve.length - 1),
     gear: Math.sign(state.throttleLevel),
+    anchor: state.anchorDeployed,
     speed: state.speed,
     speedRatio: clamp(Math.abs(state.speed) / physics.maxSpeedKnots, 0, 1),
     heading: state.heading,
@@ -474,7 +484,7 @@ function update(dt) {
   telemetry.speed = Number(state.speed.toFixed(1));
   telemetry.throttle = state.throttleLevel;
   telemetry.gear = gearForThrottle(state.throttleLevel);
-  telemetry.targetSpeed = requestedTargetSpeed;
+  telemetry.targetSpeed = state.anchorDeployed ? 0 : requestedTargetSpeed;
   telemetry.acceleration = Number(state.acceleration.toFixed(2));
   telemetry.heading =
     Math.round((((state.heading * 180) / Math.PI) % 360 + 360) % 360) % 360;
@@ -487,11 +497,12 @@ function update(dt) {
     throttleValue.textContent = telemetry.throttle < 0 ? "R" : String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
     bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
-    shoreStatus.hidden = state.shoreZone === "clear";
+    shoreStatus.hidden = state.shoreZone === "clear" && !state.anchorDeployed;
     shoreStatus.classList.toggle("impact", state.grounded && state.impact > 0.12);
-    shoreStatus.textContent = state.grounded
-      ? state.impact > 0.12 ? "碰岸" : "已靠岸"
-      : "淺水";
+    shoreStatus.textContent = state.grounded && state.impact > 0.12
+      ? "碰岸"
+      : state.anchorDeployed ? "錨已下"
+        : state.grounded ? "已靠岸" : "淺水";
   }
 }
 
@@ -538,6 +549,15 @@ function beginCameraLook(event) {
   renderer.domElement.setPointerCapture(event.pointerId);
 }
 
+function beginCanvasPointer(event) {
+  if (event.isPrimary && cameraLook.tapPointerId === null) {
+    cameraLook.tapPointerId = event.pointerId;
+    cameraLook.tapStartX = event.clientX;
+    cameraLook.tapStartY = event.clientY;
+  }
+  beginCameraLook(event);
+}
+
 function moveCameraLook(event) {
   if (event.pointerId !== cameraLook.pointerId) return;
   event.preventDefault();
@@ -556,11 +576,51 @@ function endCameraLook(event) {
   cameraLook.pointerId = null;
 }
 
-renderer.domElement.addEventListener("pointerdown", beginCameraLook);
-renderer.domElement.addEventListener("pointermove", moveCameraLook);
-for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
-  renderer.domElement.addEventListener(eventName, endCameraLook);
+function anchorScreenPosition() {
+  const target = vessel.root.getObjectByName("anchor-hit");
+  if (!target) return null;
+  target.getWorldPosition(anchorWorldPosition);
+  anchorWorldPosition.project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
+  return {
+    x: Math.round(rect.left + (anchorWorldPosition.x + 1) * rect.width * 0.5),
+    y: Math.round(rect.top + (1 - anchorWorldPosition.y) * rect.height * 0.5),
+  };
 }
+
+function toggleAnchorAt(event) {
+  const target = vessel.root.getObjectByName("anchor-hit");
+  if (!target) return false;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNdc.set(
+    (event.clientX - rect.left) / rect.width * 2 - 1,
+    -(event.clientY - rect.top) / rect.height * 2 + 1,
+  );
+  target.updateWorldMatrix(true, false);
+  raycaster.setFromCamera(pointerNdc, camera);
+  if (!raycaster.intersectObject(target, false).length) return false;
+  state.anchorDeployed = !state.anchorDeployed;
+  return true;
+}
+
+function finishCanvasPointer(event, allowTap) {
+  if (event.pointerId === cameraLook.tapPointerId) {
+    const travel = Math.hypot(
+      event.clientX - cameraLook.tapStartX,
+      event.clientY - cameraLook.tapStartY,
+    );
+    if (allowTap && travel < 12) toggleAnchorAt(event);
+    cameraLook.tapPointerId = null;
+  }
+  endCameraLook(event);
+}
+
+renderer.domElement.addEventListener("pointerdown", beginCanvasPointer);
+renderer.domElement.addEventListener("pointermove", moveCameraLook);
+renderer.domElement.addEventListener("pointerup", (event) => finishCanvasPointer(event, true));
+renderer.domElement.addEventListener("pointercancel", (event) => finishCanvasPointer(event, false));
+renderer.domElement.addEventListener("lostpointercapture",
+  (event) => finishCanvasPointer(event, false));
 
 document.querySelectorAll("[data-control]").forEach((button) => {
   const name = button.dataset.control;
@@ -595,6 +655,7 @@ function releaseControls() {
   });
   cameraLook.dragging = false;
   cameraLook.pointerId = null;
+  cameraLook.tapPointerId = null;
 }
 
 function onKey(event, pressed) {
@@ -650,12 +711,17 @@ window.render_game_to_text = () =>
       reverseSpeedKnots: vessel.profile.physics.reverseSpeedKnots,
       accelerationResponse: Number(accelerationResponse(vessel.profile.physics).toFixed(3)),
       decelerationResponse: vessel.profile.physics.decelerationResponse,
+      anchorBrakeResponse: vessel.profile.physics.anchorBrakeResponse,
     },
     controls,
     camera: {
       yaw: Math.round(THREE.MathUtils.radToDeg(cameraLook.yaw)),
       dragging: cameraLook.dragging,
       limit: 90,
+    },
+    anchor: {
+      deployed: state.anchorDeployed,
+      controlScreen: anchorScreenPosition(),
     },
     water: {
       sprayIntensity: Number((Math.max(0, state.speed)

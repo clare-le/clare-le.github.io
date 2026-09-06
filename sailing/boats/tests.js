@@ -64,6 +64,7 @@ export function runBoatModuleTests() {
           lengthMeters: 5, beamMeters: 1.7, hullCenterForwardMeters: 0.4,
           massKg: 1200, enginePowerKw: 60, maxSpeedKnots: 15,
           reverseSpeedKnots: 3, reverseThrustFactor: 0.8,
+          anchorBrakeResponse: 1,
           propulsionFactor: 1, decelerationResponse: 0.5,
           throttleCurve: [0, 0.5, 1], rudderResponse: 5,
           minSteerageKnots: 1, turnRateAtMax: 0.4,

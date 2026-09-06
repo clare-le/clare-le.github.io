@@ -96,6 +96,38 @@ export function createHelm({ materials }) {
   throttleLever.add(leverKnob);
   boat.add(throttleLever);
 
+  const anchorBase = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.038, 0.075, 4, 10),
+    chromeMaterial,
+  );
+  anchorBase.position.set(-0.35, 0.69, -0.17);
+  anchorBase.rotation.x = -0.3;
+  boat.add(anchorBase);
+
+  const anchorLever = new THREE.Group();
+  anchorLever.name = "anchor-control";
+  anchorLever.position.set(-0.35, 0.71, -0.17);
+  const anchorArm = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.008, 0.008, 0.16, 8),
+    chromeMaterial,
+  );
+  anchorArm.position.y = 0.08;
+  anchorLever.add(anchorArm);
+  const anchorKnob = new THREE.Mesh(
+    new THREE.SphereGeometry(0.024, 16, 16),
+    goldBrassMaterial,
+  );
+  anchorKnob.position.y = 0.16;
+  anchorLever.add(anchorKnob);
+  const anchorHit = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 0.28, 0.15),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  );
+  anchorHit.name = "anchor-hit";
+  anchorHit.position.y = 0.08;
+  anchorLever.add(anchorHit);
+  boat.add(anchorLever);
+
   // 9. Vintage Luxury 3-Spoke Wooden Steering Wheel (Open-top layout for gauges)
   const wheelAssembly = new THREE.Group();
   wheelAssembly.position.set(0, 0.67, 0.03);
@@ -160,6 +192,10 @@ export function createHelm({ materials }) {
     );
     throttleLever.rotation.x = THREE.MathUtils.lerp(
       throttleLever.rotation.x, -input.throttle * 0.48,
+      dt === 0 ? 1 : 1 - Math.exp(-8 * dt),
+    );
+    anchorLever.rotation.x = THREE.MathUtils.lerp(
+      anchorLever.rotation.x, input.anchor ? -0.48 : 0,
       dt === 0 ? 1 : 1 - Math.exp(-8 * dt),
     );
     speedGauge.needlePivot.rotation.z = -input.speedRatio * 2.3;

@@ -34,13 +34,13 @@ uses its matched workboat hull, wheelhouse, and helm assembly.
 - `index.js`: model registry and stable boat slot; replacement and disposal.
 - `classic/index.js`: compatible part registry, assembly, and animation dispatch.
 - `classic/hull.js`: connected hull, deck, cockpit shell, mounting points, and profile.
-- `classic/helm.js`: instruments, throttle lever, steering column, and wheel animations.
+- `classic/helm.js`: instruments, throttle and anchor levers, steering column, and wheel animations.
 - `classic/windshield.js`: windshield, frame, and mirror.
 - `classic/flag.js`: local flagstaff assembly and fixed-root pennant animation.
 - `classic/hardware.js`: navigation lights, horns, vents, cleats, and lifebuoy.
 - `classic/materials.js`: a fresh material palette for each boat instance.
 - `cargo/hull.js`: workboat hull, connected cabin shell, windows, and cargo hatch.
-- `cargo/helm.js`: five-spoke wheel, working gauges, throttle, and radio.
+- `cargo/helm.js`: five-spoke wheel, working gauges, throttle, and anchor levers.
 - `three.js`: shared Three.js version for the game and every model module.
 - `tests.js`: browser-side contract and replacement tests.
 
@@ -66,13 +66,13 @@ guarantee that arbitrary shapes will fit without gaps or intersections.
 Animation input is read-only and contains:
 
 ```js
-{ rudder, throttle, gear, speed, speedRatio, heading, time }
+{ rudder, throttle, gear, anchor, speed, speedRatio, heading, time }
 ```
 
 `rudder` is -1 to 1; throttle is -1 in reverse and 0 to 1 from neutral through
-forward; gear is -1, 0, or 1; speed is signed knots; speedRatio is the absolute
-speed divided by forward maximum speed. Heading is clockwise radians; time and
-dt are seconds.
+forward; gear is -1, 0, or 1; anchor is a boolean; speed is signed knots;
+speedRatio is the absolute speed divided by forward maximum speed. Heading is
+clockwise radians; time and dt are seconds.
 On replacement, `update(0, lastInput)` initializes the new model to current
 controls immediately. Parts must support this zero-duration initialization.
 
@@ -92,7 +92,7 @@ in `config.js`. It must return:
       lengthMeters, beamMeters, hullCenterForwardMeters,
       massKg, enginePowerKw, maxSpeedKnots,
       reverseSpeedKnots, reverseThrustFactor,
-      propulsionFactor, decelerationResponse, throttleCurve,
+      propulsionFactor, decelerationResponse, anchorBrakeResponse, throttleCurve,
       rudderResponse, minSteerageKnots, turnRateAtMax,
       motion: {
         heave, heaveFrequency, pitch, pitchFrequency,
@@ -122,6 +122,11 @@ not manufacturer specifications:
 The shared control has one reverse detent below neutral: `R, 0, 1, 2, 3, 4, 5`.
 A direction change first applies active braking to zero, then builds speed in the
 new direction. Rudder yaw and visual heel reverse with signed boat speed.
+
+Each helm also provides a left-side anchor lever that mirrors the engine lever.
+Tap it to lower or raise the anchor. While lowered, target speed is zero and the
+current throttle detent is retained; raising it resumes power from that detent.
+`anchorBrakeResponse` tunes the heavier or lighter stopping feel per model.
 
 The gameplay code owns movement, boat motion, water effects, and controls.
 `lengthMeters`, `beamMeters`, and `hullCenterForwardMeters` also define the
