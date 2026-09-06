@@ -11,7 +11,8 @@ function assert(condition, message) {
 export function runBoatModuleTests() {
   const boatConfiguration = boatPresets.classic;
   const slot = createBoatSlot(boatConfiguration);
-  const input = { rudder: 0.7, throttle: 0.6, speed: 4.5, speedRatio: 4.5 / 24, heading: 1, time: 2 };
+  const input = { rudder: 0.7, throttle: 0.6, gear: 1,
+    speed: 4.5, speedRatio: 4.5 / 24, heading: 1, time: 2 };
   const root = slot.root;
   root.position.set(10, 0.3, -20);
   root.rotation.y = 0.4;
@@ -61,6 +62,7 @@ export function runBoatModuleTests() {
         spray: { forward: 3, halfWidth: 0.8 }, waterline: 0.25,
         physics: {
           lengthMeters: 5, massKg: 1200, enginePowerKw: 60, maxSpeedKnots: 15,
+          reverseSpeedKnots: 3, reverseThrustFactor: 0.8,
           propulsionFactor: 1, decelerationResponse: 0.5,
           throttleCurve: [0, 0.5, 1], rudderResponse: 5,
           minSteerageKnots: 1, turnRateAtMax: 0.4,
@@ -97,6 +99,9 @@ export function runBoatModuleTests() {
     "Each boat model must supply its own performance profile");
   assert(slot.profile.physics.massKg < cargoSlot.profile.physics.massKg,
     "Cargo model must carry more simulated mass than the classic runabout");
+  assert(slot.profile.physics.reverseSpeedKnots === 4.5
+      && cargoSlot.profile.physics.reverseSpeedKnots === 3.5,
+    "Each boat model must supply its reverse performance");
   cargoSlot.update(0, input);
   cargoSlot.dispose();
   return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,

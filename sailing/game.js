@@ -30,6 +30,7 @@ const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西
 const telemetry = {
   speed: 0,
   throttle: 0,
+  gear: "N",
   targetSpeed: 0,
   acceleration: 0,
   heading: 0,
@@ -45,7 +46,14 @@ function accelerationResponse(physics) {
 }
 
 function targetSpeedForThrottle(physics, throttleLevel) {
+  if (throttleLevel < 0) return -physics.reverseSpeedKnots;
   return physics.maxSpeedKnots * physics.throttleCurve[throttleLevel];
+}
+
+function gearForThrottle(throttleLevel) {
+  if (throttleLevel < 0) return "R";
+  if (throttleLevel === 0) return "N";
+  return "F";
 }
 
 const scene = new THREE.Scene();
@@ -281,26 +289,39 @@ function resize() {
 function update(dt) {
   state.time += dt;
   const { physics } = vessel.profile;
-  const targetSpeed = targetSpeedForThrottle(physics, state.throttleLevel);
+  const requestedTargetSpeed = targetSpeedForThrottle(physics, state.throttleLevel);
   const previousSpeed = state.speed;
-  const speedResponse = targetSpeed > state.speed
-    ? accelerationResponse(physics)
-    : physics.decelerationResponse;
-  state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, speedResponse, dt);
-  if (Math.abs(targetSpeed - state.speed) < 0.002) state.speed = targetSpeed;
+  const changingDirection = requestedTargetSpeed !== 0 && state.speed !== 0
+    && Math.sign(requestedTargetSpeed) !== Math.sign(state.speed);
+  const movementTarget = changingDirection ? 0 : requestedTargetSpeed;
+  const gainingSpeed = Math.abs(movementTarget) > Math.abs(state.speed);
+  const propulsion = accelerationResponse(physics)
+    * (movementTarget < 0 ? physics.reverseThrustFactor : 1);
+  let speedResponse = physics.decelerationResponse;
+  if (changingDirection) {
+    speedResponse = Math.max(speedResponse, accelerationResponse(physics) * 4);
+  } else if (gainingSpeed) {
+    speedResponse = propulsion;
+  }
+  state.speed = THREE.MathUtils.damp(state.speed, movementTarget, speedResponse, dt);
+  const stopThreshold = changingDirection ? 0.03 : 0.002;
+  if (Math.abs(movementTarget - state.speed) < stopThreshold) state.speed = movementTarget;
   state.acceleration = (state.speed - previousSpeed) / dt;
 
   const turnInput = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
   const rudderResponse = 1 - Math.exp(-physics.rudderResponse * dt);
   state.rudder = THREE.MathUtils.lerp(state.rudder, turnInput, rudderResponse);
-  const speedRatio = clamp(state.speed / physics.maxSpeedKnots, 0, 1);
-  const turnAuthority = clamp(state.speed / physics.minSteerageKnots, 0, 1);
+  const speedRatio = clamp(Math.abs(state.speed) / physics.maxSpeedKnots, 0, 1);
+  const turnAuthority = clamp(Math.abs(state.speed) / physics.minSteerageKnots, 0, 1);
   const turnRate = physics.turnRateAtMax * (0.28 + speedRatio * 0.72);
-  state.heading += state.rudder * turnRate * turnAuthority * dt;
+  state.heading += state.rudder * turnRate * turnAuthority * Math.sign(state.speed) * dt;
 
   vessel.update(dt, {
     rudder: state.rudder,
-    throttle: state.throttleLevel / (physics.throttleCurve.length - 1),
+    throttle: state.throttleLevel < 0
+      ? -1
+      : state.throttleLevel / (physics.throttleCurve.length - 1),
+    gear: Math.sign(state.throttleLevel),
     speed: state.speed,
     speedRatio,
     heading: state.heading,
@@ -334,7 +355,7 @@ function update(dt) {
   boat.rotation.x = Math.sin(state.time * motion.pitchFrequency + speedRatio * 2) * motion.pitch
     - state.acceleration * motion.accelerationPitch;
   boat.rotation.z =
-    -state.rudder * motion.heel * speedRatio
+    -state.rudder * motion.heel * speedRatio * Math.sign(state.speed)
     + Math.sin(state.time * 1.2) * motion.roll;
 
   markers.forEach((marker, index) => {
@@ -363,7 +384,8 @@ function update(dt) {
 
   telemetry.speed = Number(state.speed.toFixed(1));
   telemetry.throttle = state.throttleLevel;
-  telemetry.targetSpeed = targetSpeed;
+  telemetry.gear = gearForThrottle(state.throttleLevel);
+  telemetry.targetSpeed = requestedTargetSpeed;
   telemetry.acceleration = Number(state.acceleration.toFixed(2));
   telemetry.heading =
     Math.round((((state.heading * 180) / Math.PI) % 360 + 360) % 360) % 360;
@@ -373,7 +395,7 @@ function update(dt) {
   if (state.time - state.lastTelemetry > 0.12) {
     state.lastTelemetry = state.time;
     speedValue.textContent = telemetry.speed.toFixed(1);
-    throttleValue.textContent = String(telemetry.throttle);
+    throttleValue.textContent = telemetry.throttle < 0 ? "R" : String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
     bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
   }
@@ -401,10 +423,10 @@ function adjustThrottle(delta) {
   const { throttleCurve } = vessel.profile.physics;
   state.throttleLevel = clamp(
     state.throttleLevel + delta,
-    0,
+    -1,
     throttleCurve.length - 1,
   );
-  throttleValue.textContent = String(state.throttleLevel);
+  throttleValue.textContent = state.throttleLevel < 0 ? "R" : String(state.throttleLevel);
 }
 
 function beginCameraLook(event) {
@@ -531,6 +553,7 @@ window.render_game_to_text = () =>
       massKg: vessel.profile.physics.massKg,
       enginePowerKw: vessel.profile.physics.enginePowerKw,
       maxSpeedKnots: vessel.profile.physics.maxSpeedKnots,
+      reverseSpeedKnots: vessel.profile.physics.reverseSpeedKnots,
       accelerationResponse: Number(accelerationResponse(vessel.profile.physics).toFixed(3)),
       decelerationResponse: vessel.profile.physics.decelerationResponse,
     },
@@ -541,7 +564,8 @@ window.render_game_to_text = () =>
       limit: 90,
     },
     water: {
-      sprayIntensity: Number((state.speed / vessel.profile.physics.maxSpeedKnots).toFixed(2)),
+      sprayIntensity: Number((Math.max(0, state.speed)
+        / vessel.profile.physics.maxSpeedKnots).toFixed(2)),
       activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
     },
   });

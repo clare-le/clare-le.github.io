@@ -109,6 +109,8 @@ export function createCargoHull(materials) {
         massKg: 4800,
         enginePowerKw: 110,
         maxSpeedKnots: 10.5,
+        reverseSpeedKnots: 3.5,
+        reverseThrustFactor: 0.85,
         propulsionFactor: 0.75,
         decelerationResponse: 0.22,
         throttleCurve: [0, 0.14, 0.31, 0.52, 0.75, 1],

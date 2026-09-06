@@ -16,14 +16,16 @@ function validateModel(model) {
     profile?.camera?.height, profile?.camera?.lookAhead, profile?.camera?.lookHeight,
     profile?.spray?.forward, profile?.spray?.halfWidth,
     physics?.lengthMeters, physics?.massKg, physics?.enginePowerKw,
-    physics?.maxSpeedKnots, physics?.propulsionFactor, physics?.decelerationResponse,
+    physics?.maxSpeedKnots, physics?.reverseSpeedKnots, physics?.reverseThrustFactor,
+    physics?.propulsionFactor, physics?.decelerationResponse,
     physics?.rudderResponse, physics?.minSteerageKnots, physics?.turnRateAtMax,
     motion?.heave, motion?.heaveFrequency, motion?.pitch, motion?.pitchFrequency,
     motion?.accelerationPitch, motion?.heel, motion?.roll, motion?.cameraHeave]) {
     if (!Number.isFinite(value)) throw new Error("Boat profile values must be finite numbers");
   }
   for (const value of [physics.lengthMeters, physics.massKg, physics.enginePowerKw,
-    physics.maxSpeedKnots, physics.propulsionFactor, physics.decelerationResponse,
+    physics.maxSpeedKnots, physics.reverseSpeedKnots, physics.reverseThrustFactor,
+    physics.propulsionFactor, physics.decelerationResponse,
     physics.rudderResponse, physics.minSteerageKnots, physics.turnRateAtMax]) {
     if (value <= 0) throw new Error("Boat physical values must be positive");
   }

@@ -164,7 +164,7 @@ export function createHelm({ materials }) {
     );
     speedGauge.needlePivot.rotation.z = -input.speedRatio * 2.3;
     rpmGauge.needlePivot.rotation.z =
-      -(input.throttle * 0.72 + input.speedRatio * 0.28) * 2.4;
+      -(Math.abs(input.throttle) * 0.72 + input.speedRatio * 0.28) * 2.4;
     headingGauge.needlePivot.rotation.z =
       -((input.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   }

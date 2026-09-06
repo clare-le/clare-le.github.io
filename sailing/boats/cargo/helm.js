@@ -101,8 +101,10 @@ export function createCargoHelm(materials) {
         dt === 0 ? 1 : 1 - Math.exp(-10 * dt));
       lever.rotation.x = THREE.MathUtils.lerp(lever.rotation.x, -input.throttle * 0.48,
         dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
-      speed.rotation.z = Math.PI * 0.75 - Math.min(input.speed / 10, 1) * Math.PI * 1.5;
-      rpm.rotation.z = Math.PI * 0.75 - (input.throttle * 0.72 + input.speedRatio * 0.28) * Math.PI * 1.5;
+      speed.rotation.z = Math.PI * 0.75
+        - Math.min(Math.abs(input.speed) / 10, 1) * Math.PI * 1.5;
+      rpm.rotation.z = Math.PI * 0.75
+        - (Math.abs(input.throttle) * 0.72 + input.speedRatio * 0.28) * Math.PI * 1.5;
       heading.rotation.z = Math.PI * 0.75
         - (((input.heading % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 0.75;
     },

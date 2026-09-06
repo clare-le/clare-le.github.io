@@ -200,6 +200,8 @@ export function createHull({ materials }) {
         massKg: 820,
         enginePowerKw: 74.6,
         maxSpeedKnots: 24,
+        reverseSpeedKnots: 4.5,
+        reverseThrustFactor: 0.8,
         propulsionFactor: 1,
         decelerationResponse: 0.72,
         throttleCurve: [0, 0.16, 0.34, 0.54, 0.76, 1],

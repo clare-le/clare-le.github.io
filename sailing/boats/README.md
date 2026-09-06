@@ -66,11 +66,13 @@ guarantee that arbitrary shapes will fit without gaps or intersections.
 Animation input is read-only and contains:
 
 ```js
-{ rudder, throttle, speed, speedRatio, heading, time }
+{ rudder, throttle, gear, speed, speedRatio, heading, time }
 ```
 
-`rudder` is -1 to 1; throttle and speedRatio are 0 to 1; speed is the game's
-displayed kn value; heading is clockwise radians; time and dt are seconds.
+`rudder` is -1 to 1; throttle is -1 in reverse and 0 to 1 from neutral through
+forward; gear is -1, 0, or 1; speed is signed knots; speedRatio is the absolute
+speed divided by forward maximum speed. Heading is clockwise radians; time and
+dt are seconds.
 On replacement, `update(0, lastInput)` initializes the new model to current
 controls immediately. Parts must support this zero-duration initialization.
 
@@ -88,6 +90,7 @@ in `config.js`. It must return:
     waterline,
     physics: {
       lengthMeters, massKg, enginePowerKw, maxSpeedKnots,
+      reverseSpeedKnots, reverseThrustFactor,
       propulsionFactor, decelerationResponse, throttleCurve,
       rudderResponse, minSteerageKnots, turnRateAtMax,
       motion: {
@@ -110,10 +113,14 @@ deceleration, and motion values directly from the profile.
 Current values are gameplay estimates based on the meshes' metre-scale lengths,
 not manufacturer specifications:
 
-| Model | Length | Simulated mass | Engine | Maximum speed |
-| --- | ---: | ---: | ---: | ---: |
-| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 24 kn |
-| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 10.5 kn |
+| Model | Length | Simulated mass | Engine | Forward max | Reverse max |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 24 kn | 4.5 kn |
+| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 10.5 kn | 3.5 kn |
+
+The shared control has one reverse detent below neutral: `R, 0, 1, 2, 3, 4, 5`.
+A direction change first applies active braking to zero, then builds speed in the
+new direction. Rudder yaw and visual heel reverse with signed boat speed.
 
 The gameplay code owns movement, boat motion, water effects, and controls.
 The model owns meshes and their animations. A different model can use its own
