@@ -40,7 +40,8 @@ uses its matched workboat hull, wheelhouse, and helm assembly.
 - `classic/hardware.js`: navigation lights, horns, vents, cleats, and lifebuoy.
 - `classic/materials.js`: a fresh material palette for each boat instance.
 - `cargo/hull.js`: workboat hull, connected cabin shell, windows, and cargo hatch.
-- `cargo/helm.js`: five-spoke wheel, working gauges, throttle, and anchor levers.
+- `cargo/helm.js`: starboard helm station, radar, warning lamps, working engine gauges,
+  wheel, throttle, and anchor levers.
 - `three.js`: shared Three.js version for the game and every model module.
 - `tests.js`: browser-side contract and replacement tests.
 

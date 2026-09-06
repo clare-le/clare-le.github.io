@@ -68,6 +68,14 @@ export function createCargoHull(materials) {
     [cabinHalfWidth, bottomY, frontZ], 0.044);
   strut(root, cabin, [-cabinHalfWidth, topY, browZ],
     [cabinHalfWidth, topY, browZ], 0.055);
+  for (const side of [-1, 1]) {
+    const pivotX = side * 0.33;
+    box(root, seal, [0.055, 0.032, 0.025], [pivotX, 1.105, -0.674]);
+    strut(root, seal, [pivotX, 1.11, -0.663],
+      [side * 0.25, 1.36, -0.638], 0.007);
+    strut(root, seal, [side * 0.27, 1.27, -0.646],
+      [side * 0.22, 1.48, -0.615], 0.008);
+  }
   for (const x of [-cabinHalfWidth, cabinHalfWidth]) {
     panel(root, glass, [[x, bottomY, frontZ], [x, bottomY, rearZ],
       [x, topY, rearZ], [x, topY, browZ]]);
