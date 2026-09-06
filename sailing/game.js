@@ -82,8 +82,125 @@ const seaMaterial = new THREE.MeshStandardMaterial({
   emissive: 0x063d56,
   emissiveIntensity: 0.08,
 });
+const waterTime = { value: 0 };
+seaMaterial.onBeforeCompile = (shader) => {
+  shader.uniforms.waterTime = waterTime;
+  shader.vertexShader = `varying vec3 waterPosition;\n${shader.vertexShader}`
+    .replace("#include <begin_vertex>", `#include <begin_vertex>
+      waterPosition = (modelMatrix * vec4(position, 1.0)).xyz;`);
+  shader.fragmentShader = `uniform float waterTime;
+    varying vec3 waterPosition;\n${shader.fragmentShader}`
+    .replace("#include <color_fragment>", `#include <color_fragment>
+      vec2 p = waterPosition.xz;
+      float ripple = sin(p.y * 9.0 + sin(p.x * 3.2 + waterTime * 0.7) * 2.0
+        + sin(p.y * 2.1 + p.x * 1.7) * 1.4 + waterTime * 1.2);
+      float crossRipple = sin(p.x * 5.0 - p.y * 3.0 - waterTime * 0.8);
+      float nearWater = 1.0 - smoothstep(6.0, 35.0,
+        distance(cameraPosition.xz, p));
+      float crest = smoothstep(0.75, 1.0, ripple)
+        * smoothstep(-0.3, 0.8, crossRipple);
+      diffuseColor.rgb *= 1.0 + nearWater * ripple * 0.1;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.38, 0.79, 0.82),
+        crest * nearWater * 0.28);`);
+};
 const sea = new THREE.Mesh(seaGeometry, seaMaterial);
 scene.add(sea);
+
+// Fixed-size world-space particle pool: emitted water does not turn with the boat.
+const sprayCount = 240;
+const sprayPositions = new Float32Array(sprayCount * 3);
+const sprayStrength = new Float32Array(sprayCount);
+const sprayParticles = Array.from({ length: sprayCount }, () => ({
+  age: 2, life: 1, vx: 0, vy: 0, vz: 0, size: 0,
+}));
+const sprayGeometry = new THREE.BufferGeometry();
+sprayGeometry.setAttribute("position", new THREE.BufferAttribute(sprayPositions, 3)
+  .setUsage(THREE.DynamicDrawUsage));
+sprayGeometry.setAttribute("strength", new THREE.BufferAttribute(sprayStrength, 1)
+  .setUsage(THREE.DynamicDrawUsage));
+const sprayMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: { pixelScale: { value: 1 } },
+  vertexShader: `
+    attribute float strength;
+    uniform float pixelScale;
+    varying float opacity;
+    void main() {
+      vec4 eye = modelViewMatrix * vec4(position, 1.0);
+      opacity = strength;
+      gl_Position = projectionMatrix * eye;
+      gl_PointSize = clamp(pixelScale * (0.016 + strength * 0.025)
+        / max(0.1, -eye.z), 1.0, 22.0);
+    }
+  `,
+  fragmentShader: `
+    varying float opacity;
+    void main() {
+      float radius = length(gl_PointCoord - 0.5) * 2.0;
+      float alpha = (1.0 - smoothstep(0.25, 1.0, radius)) * opacity;
+      if (alpha < 0.01) discard;
+      gl_FragColor = vec4(0.86, 0.98, 1.0, alpha);
+    }
+  `,
+});
+const bowSpray = new THREE.Points(sprayGeometry, sprayMaterial);
+bowSpray.frustumCulled = false;
+scene.add(bowSpray);
+let sprayCursor = 0;
+let sprayEmission = 0;
+
+function waterHeight(x, z, time) {
+  return Math.sin(x * 0.22 + time * 1.7) * 0.22
+    + Math.sin(z * 0.18 + time * 1.1) * 0.18
+    + Math.sin((x + z) * 0.08 + time * 0.7) * 0.12;
+}
+
+function updateBowSpray(dt, forwardX, forwardZ) {
+  const intensity = clamp(state.speed / 8.5, 0, 1);
+  const rightX = -forwardZ;
+  const rightZ = forwardX;
+  sprayEmission += dt * 100 * intensity;
+  while (sprayEmission >= 1) {
+    sprayEmission -= 1;
+    for (const side of [-1, 1]) {
+      const index = sprayCursor++ % sprayCount;
+      const particle = sprayParticles[index];
+      const spread = 0.65 + Math.random() * 0.65;
+      const x = state.x + forwardX * 2.45 + rightX * side * 0.32;
+      const z = state.z + forwardZ * 2.45 + rightZ * side * 0.32;
+      const hullWaterline = 0.18 + Math.sin(state.time * 2.1) * 0.08;
+      sprayPositions.set([x, Math.max(waterHeight(x, z, state.time), hullWaterline)
+        + 0.08, z], index * 3);
+      particle.age = 0;
+      particle.life = 0.65 + Math.random() * 0.5;
+      particle.vx = rightX * side * spread * (0.5 + intensity)
+        + forwardX * state.speed * 0.85;
+      particle.vz = rightZ * side * spread * (0.5 + intensity)
+        + forwardZ * state.speed * 0.85;
+      particle.vy = 0.4 + intensity * (1.7 + Math.random() * 0.4);
+      particle.size = 0.25 + intensity * 0.65;
+    }
+  }
+  for (let i = 0; i < sprayCount; i += 1) {
+    const particle = sprayParticles[i];
+    particle.age += dt;
+    if (particle.age >= particle.life) {
+      sprayStrength[i] = 0;
+      continue;
+    }
+    const offset = i * 3;
+    sprayPositions[offset] += particle.vx * dt;
+    sprayPositions[offset + 2] += particle.vz * dt;
+    particle.vy -= 2.8 * dt;
+    const surface = waterHeight(sprayPositions[offset], sprayPositions[offset + 2], state.time);
+    sprayPositions[offset + 1] = Math.max(surface + 0.025,
+      sprayPositions[offset + 1] + particle.vy * dt);
+    sprayStrength[i] = particle.size * (1 - particle.age / particle.life);
+  }
+  sprayGeometry.attributes.position.needsUpdate = true;
+  sprayGeometry.attributes.strength.needsUpdate = true;
+}
 
 const horizon = new THREE.Mesh(
   new THREE.RingGeometry(88, 90, 96),
@@ -760,6 +877,7 @@ function resize() {
   const width = mount.clientWidth || window.innerWidth;
   const height = mount.clientHeight || window.innerHeight;
   renderer.setSize(width, height);
+  sprayMaterial.uniforms.pixelScale.value = height * renderer.getPixelRatio();
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
@@ -816,16 +934,15 @@ function update(dt) {
   const forwardZ = -Math.cos(state.heading);
   state.x += forwardX * state.speed * dt;
   state.z += forwardZ * state.speed * dt;
+  waterTime.value = state.time;
+  updateBowSpray(dt, forwardX, forwardZ);
 
   const positions = seaGeometry.attributes.position;
   const points = positions.array;
   for (let i = 0; i < points.length; i += 3) {
-    const x = basePositions[i] + state.x * 0.35;
-    const z = basePositions[i + 2] + state.z * 0.35;
-    points[i + 1] =
-      Math.sin(x * 0.22 + state.time * 1.7) * 0.22 +
-      Math.sin(z * 0.18 + state.time * 1.1) * 0.18 +
-      Math.sin((x + z) * 0.08 + state.time * 0.7) * 0.12;
+    const x = basePositions[i] + state.x;
+    const z = basePositions[i + 2] + state.z;
+    points[i + 1] = waterHeight(x, z, state.time);
   }
   positions.needsUpdate = true;
   seaGeometry.computeVertexNormals();
@@ -979,6 +1096,10 @@ window.render_game_to_text = () =>
     coordinateSystem: "x right, z forward is negative, heading degrees clockwise",
     boat: telemetry,
     controls,
+    water: {
+      sprayIntensity: Number((state.speed / 8.5).toFixed(2)),
+      activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
+    },
   });
 
 window.advanceTime = (ms) => {

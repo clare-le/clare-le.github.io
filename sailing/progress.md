@@ -37,3 +37,11 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Rebuilt the bow flagstaff around one vertical anchor: the stem cap reaches the deck, the socket overlaps the pole base, and the pennant root intersects the pole. Flutter now deforms only the free tip so the attached edge cannot drift away.
 - Moved only the chase camera forward, reducing its trailing distance from 1.78 to 1.45 boat units. The boat model and its parts remain unchanged, while the full steering wheel stays above the throttle buttons on portrait phones.
 - Lowered only the camera height from 1.58 to 1.50 boat units, preserving the forward distance and all boat geometry.
+
+## 2026-09-06
+
+- Added world-position sea ripples with distance fading, preserving the existing sea lighting. Wave heights now use the same world coordinates so surface detail travels past the boat consistently.
+- Added a fixed pool of 240 bow-spray particles in one draw call. Actual speed controls emission and spray strength; existing particles move independently of steering and fade after stopping. Boat geometry and camera settings remain unchanged.
+- Tuned spray height and spread from portrait screenshots to keep droplets visible beside the bow without obscuring the helm or controls.
+- Verified Chromium at 393 x 852, 375 x 667, and 1280 x 720, plus Playwright WebKit at 393 x 852: idle, 1.3 kn, 8.5 kn, turning, and braking to rest. Canvas pixel checks passed; no console errors; spray count increases with speed and returns to zero after stopping. Also ran the game skill's action/screenshot client.
+- Next: real iPhone Safari feedback on motion, spray intensity, and sustained performance; no real-device performance claim yet.
