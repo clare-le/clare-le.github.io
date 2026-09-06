@@ -132,7 +132,7 @@ export function createCargoHelm(materials) {
   root.add(wheel);
 
   const throttleBase = box(root, floor, [0.105, 0.17, 0.07], [0.5, 0.855, -0.11]);
-  throttleBase.rotation.x = -0.2;
+  throttleBase.rotation.x = 0.2;
   const lever = new THREE.Group();
   lever.name = "cargo-throttle";
   lever.position.set(0.5, 0.89, -0.05);
@@ -144,7 +144,7 @@ export function createCargoHelm(materials) {
   root.add(lever);
 
   const anchorBase = box(root, floor, [0.105, 0.17, 0.07], [-0.5, 0.855, -0.11]);
-  anchorBase.rotation.x = -0.2;
+  anchorBase.rotation.x = 0.2;
   const anchorLever = new THREE.Group();
   anchorLever.name = "anchor-control";
   anchorLever.position.set(-0.5, 0.89, -0.05);
@@ -167,10 +167,10 @@ export function createCargoHelm(materials) {
     update(dt, input) {
       wheel.rotation.z = THREE.MathUtils.lerp(wheel.rotation.z, -input.rudder * 0.82,
         dt === 0 ? 1 : 1 - Math.exp(-10 * dt));
-      lever.rotation.x = THREE.MathUtils.lerp(lever.rotation.x, -input.throttle * 0.48,
+      lever.rotation.x = THREE.MathUtils.lerp(lever.rotation.x, input.throttle * 0.48,
         dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
       anchorLever.rotation.x = THREE.MathUtils.lerp(anchorLever.rotation.x,
-        input.anchor ? -0.48 : 0, dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
+        input.anchor ? 0.48 : 0, dt === 0 ? 1 : 1 - Math.exp(-8 * dt));
       rpm.rotation.z = Math.PI * 0.75
         - (Math.abs(input.throttle) * 0.72 + input.speedRatio * 0.28) * Math.PI * 1.5;
       temperature.rotation.z = Math.PI * 0.45
