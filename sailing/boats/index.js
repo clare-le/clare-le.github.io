@@ -16,7 +16,8 @@ function validateModel(model) {
     profile?.camera?.height, profile?.camera?.lookAhead, profile?.camera?.lookHeight,
     profile?.spray?.forward, profile?.spray?.halfWidth,
     physics?.lengthMeters, physics?.beamMeters, physics?.hullCenterForwardMeters,
-    physics?.massKg, physics?.enginePowerKw,
+    physics?.massKg, physics?.enginePowerKw, physics?.idleRpm, physics?.maxRpm,
+    physics?.fuelCapacityLiters, physics?.fullLoadFuelLitersPerHour,
     physics?.maxSpeedKnots, physics?.reverseSpeedKnots, physics?.reverseThrustFactor,
     physics?.anchorBrakeResponse,
     physics?.propulsionFactor, physics?.decelerationResponse,
@@ -26,7 +27,8 @@ function validateModel(model) {
     if (!Number.isFinite(value)) throw new Error("Boat profile values must be finite numbers");
   }
   for (const value of [physics.lengthMeters, physics.beamMeters, physics.massKg,
-    physics.enginePowerKw,
+    physics.enginePowerKw, physics.idleRpm, physics.maxRpm,
+    physics.fuelCapacityLiters, physics.fullLoadFuelLitersPerHour,
     physics.maxSpeedKnots, physics.reverseSpeedKnots, physics.reverseThrustFactor,
     physics.anchorBrakeResponse,
     physics.propulsionFactor, physics.decelerationResponse,
@@ -36,6 +38,9 @@ function validateModel(model) {
   if (physics.hullCenterForwardMeters < 0
       || physics.hullCenterForwardMeters >= physics.lengthMeters / 2) {
     throw new Error("Boat hull center must stay within its measured length");
+  }
+  if (physics.maxRpm <= physics.idleRpm) {
+    throw new Error("Boat maximum RPM must exceed idle RPM");
   }
   const throttleCurve = physics.throttleCurve;
   if (!Array.isArray(throttleCurve) || throttleCurve.length < 2

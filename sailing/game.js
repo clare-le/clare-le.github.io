@@ -8,6 +8,11 @@ const speedValue = document.querySelector("#speed");
 const headingValue = document.querySelector("#heading");
 const throttleValue = document.querySelector("#throttle");
 const bearingValue = document.querySelector("#bearing");
+const fuelValue = document.querySelector("#fuel");
+const fuelLitersValue = document.querySelector("#fuel-liters");
+const rpmValue = document.querySelector("#rpm");
+const latitudeValue = document.querySelector("#latitude");
+const longitudeValue = document.querySelector("#longitude");
 const loading = document.querySelector("#loading");
 const shoreStatus = document.querySelector("#shore-status");
 
@@ -34,6 +39,8 @@ const anchorWorldPosition = new THREE.Vector3();
 const knotsToMetersPerSecond = 0.514444;
 const propulsionResponseScale = 24;
 const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
+const spawnCoordinates = { latitude: 25.15, longitude: 121.78 };
+const metersPerLatitudeDegree = 111320;
 
 const telemetry = {
   speed: 0,
@@ -44,6 +51,11 @@ const telemetry = {
   heading: 0,
   x: 0,
   z: 0,
+  fuelPercent: 100,
+  fuelLiters: 0,
+  rpm: 0,
+  latitude: spawnCoordinates.latitude,
+  longitude: spawnCoordinates.longitude,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -62,6 +74,17 @@ function gearForThrottle(throttleLevel) {
   if (throttleLevel < 0) return "R";
   if (throttleLevel === 0) return "N";
   return "F";
+}
+
+function instrumentRpm(physics, throttleLevel, speed) {
+  if (throttleLevel === 0) return physics.idleRpm;
+  const throttleRatio = throttleLevel < 0
+    ? physics.reverseThrustFactor
+    : physics.throttleCurve[throttleLevel];
+  const speedRatio = clamp(Math.abs(speed) / physics.maxSpeedKnots, 0, 1);
+  const rpmRatio = clamp(throttleRatio * 0.82 + speedRatio * 0.18, 0, 1);
+  const rpm = THREE.MathUtils.lerp(physics.idleRpm, physics.maxRpm, rpmRatio);
+  return Math.round(rpm / 50) * 50;
 }
 
 const scene = new THREE.Scene();
@@ -291,6 +314,7 @@ const state = {
   collisionCount: 0,
   grounded: false,
   anchorDeployed: false,
+  fuelFraction: 1,
   time: 0,
   lastTelemetry: 0,
 };
@@ -359,6 +383,13 @@ function update(dt) {
   state.impact = Math.max(0, state.impact - dt * 1.25);
   const { physics } = vessel.profile;
   const requestedTargetSpeed = targetSpeedForThrottle(physics, state.throttleLevel);
+  const throttleRatio = state.throttleLevel < 0
+    ? physics.reverseThrustFactor
+    : physics.throttleCurve[state.throttleLevel];
+  const fuelLoad = state.throttleLevel === 0 ? 0.06 : 0.12 + throttleRatio * 0.88;
+  state.fuelFraction = Math.max(0, state.fuelFraction
+    - physics.fullLoadFuelLitersPerHour * fuelLoad * dt
+      / (physics.fuelCapacityLiters * 3600));
   const previousSpeed = state.speed;
   const changingDirection = requestedTargetSpeed !== 0 && state.speed !== 0
     && Math.sign(requestedTargetSpeed) !== Math.sign(state.speed);
@@ -490,6 +521,17 @@ function update(dt) {
     Math.round((((state.heading * 180) / Math.PI) % 360 + 360) % 360) % 360;
   telemetry.x = Number(state.x.toFixed(1));
   telemetry.z = Number(state.z.toFixed(1));
+  telemetry.fuelPercent = Number((state.fuelFraction * 100).toFixed(1));
+  telemetry.fuelLiters = Number(
+    (state.fuelFraction * physics.fuelCapacityLiters).toFixed(1),
+  );
+  telemetry.rpm = instrumentRpm(physics, state.throttleLevel, state.speed);
+  telemetry.latitude = Number(
+    (spawnCoordinates.latitude - state.z / metersPerLatitudeDegree).toFixed(5),
+  );
+  telemetry.longitude = Number((spawnCoordinates.longitude
+    + state.x / (metersPerLatitudeDegree
+      * Math.cos(spawnCoordinates.latitude * Math.PI / 180))).toFixed(5));
 
   if (state.time - state.lastTelemetry > 0.12) {
     state.lastTelemetry = state.time;
@@ -497,6 +539,11 @@ function update(dt) {
     throttleValue.textContent = telemetry.throttle < 0 ? "R" : String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
     bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
+    fuelValue.textContent = String(Math.round(telemetry.fuelPercent));
+    fuelLitersValue.textContent = String(Math.round(telemetry.fuelLiters));
+    rpmValue.textContent = telemetry.rpm.toLocaleString("en-US");
+    latitudeValue.textContent = `${telemetry.latitude.toFixed(4)}°N`;
+    longitudeValue.textContent = `${telemetry.longitude.toFixed(4)}°E`;
     shoreStatus.hidden = state.shoreZone === "clear" && !state.anchorDeployed;
     shoreStatus.classList.toggle("impact", state.grounded && state.impact > 0.12);
     shoreStatus.textContent = state.grounded && state.impact > 0.12

@@ -15,15 +15,32 @@
     <div id="scene" aria-hidden="true"></div>
 
     <div class="hud" aria-live="polite">
-      <div class="meter">
-        <span>航速</span>
-        <strong><b id="speed">0.0</b> kn</strong>
+      <div class="meter meter-fuel">
+        <span>油量</span>
+        <strong><b id="fuel">100</b><i>%</i></strong>
+        <small><b id="fuel-liters">360</b> L</small>
+      </div>
+      <div class="meter meter-rpm">
+        <span>RPM</span>
+        <strong id="rpm">650</strong>
         <small>檔位 <b id="throttle">0</b></small>
       </div>
-      <div class="meter meter-right">
+      <div class="meter meter-speed">
+        <span>航速</span>
+        <strong><b id="speed">0.0</b><i>kn</i></strong>
+      </div>
+      <div class="meter meter-position">
+        <span>經緯度</span>
+        <strong id="latitude">25.1500°N</strong>
+        <small id="longitude">121.7800°E</small>
+      </div>
+      <div class="meter meter-bearing">
+        <span>導航方向</span>
+        <strong id="bearing">北</strong>
+      </div>
+      <div class="meter meter-heading">
         <span>航向</span>
-        <strong><b id="heading">0</b>°</strong>
-        <small id="bearing">北</small>
+        <strong><b id="heading">0</b><i>°</i></strong>
       </div>
     </div>
 

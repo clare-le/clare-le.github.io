@@ -90,7 +90,8 @@ in `config.js`. It must return:
     waterline,
     physics: {
       lengthMeters, beamMeters, hullCenterForwardMeters,
-      massKg, enginePowerKw, maxSpeedKnots,
+      massKg, enginePowerKw, idleRpm, maxRpm,
+      fuelCapacityLiters, fullLoadFuelLitersPerHour, maxSpeedKnots,
       reverseSpeedKnots, reverseThrustFactor,
       propulsionFactor, decelerationResponse, anchorBrakeResponse, throttleCurve,
       rudderResponse, minSteerageKnots, turnRateAtMax,
@@ -109,15 +110,15 @@ The profile defines the helm view, bow-spray origins, base floating height, and
 the boat-specific performance model. The gameplay code derives acceleration
 response from engine power per tonne, applies the model's propulsion factor,
 converts displayed knots to metres per second, and reads the remaining steering,
-deceleration, and motion values directly from the profile.
+deceleration, engine-instrument, fuel, and motion values directly from the profile.
 
 Current values are gameplay estimates based on the meshes' metre-scale lengths,
 not manufacturer specifications:
 
-| Model | Length | Simulated mass | Engine | Forward max | Reverse max |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 24 kn | 4.5 kn |
-| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 10.5 kn | 3.5 kn |
+| Model | Length | Simulated mass | Engine | RPM range | Fuel | Forward max | Reverse max |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 750-5,200 | 95 L | 24 kn | 4.5 kn |
+| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 650-2,800 | 360 L | 10.5 kn | 3.5 kn |
 
 The shared control has one reverse detent below neutral: `R, 0, 1, 2, 3, 4, 5`.
 A direction change first applies active braking to zero, then builds speed in the

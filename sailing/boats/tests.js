@@ -62,7 +62,9 @@ export function runBoatModuleTests() {
         spray: { forward: 3, halfWidth: 0.8 }, waterline: 0.25,
         physics: {
           lengthMeters: 5, beamMeters: 1.7, hullCenterForwardMeters: 0.4,
-          massKg: 1200, enginePowerKw: 60, maxSpeedKnots: 15,
+          massKg: 1200, enginePowerKw: 60, idleRpm: 700, maxRpm: 3600,
+          fuelCapacityLiters: 120, fullLoadFuelLitersPerHour: 18,
+          maxSpeedKnots: 15,
           reverseSpeedKnots: 3, reverseThrustFactor: 0.8,
           anchorBrakeResponse: 1,
           propulsionFactor: 1, decelerationResponse: 0.5,
