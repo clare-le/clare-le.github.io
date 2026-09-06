@@ -1,10 +1,16 @@
 import * as THREE from "./boats/three.js";
 import { createBoatSlot } from "./boats/index.js";
 import { selectBoatConfiguration } from "./boats/config.js";
-import { createTestIsland } from "./world/island.js";
+import {
+  createCoastalWorld,
+  KAOHSIUNG_SPAWN,
+  MAP_COMPRESSION,
+  projectCoordinates,
+} from "./world/geography.js";
 
 const mount = document.querySelector("#scene");
 const speedValue = document.querySelector("#speed");
+const travelMultiplierValue = document.querySelector("#travel-multiplier");
 const headingValue = document.querySelector("#heading");
 const throttleValue = document.querySelector("#throttle");
 const bearingValue = document.querySelector("#bearing");
@@ -39,8 +45,7 @@ const anchorWorldPosition = new THREE.Vector3();
 const knotsToMetersPerSecond = 0.514444;
 const propulsionResponseScale = 24;
 const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
-const spawnCoordinates = { latitude: 25.15, longitude: 121.78 };
-const metersPerLatitudeDegree = 111320;
+const spawnCoordinates = KAOHSIUNG_SPAWN;
 
 const telemetry = {
   speed: 0,
@@ -56,6 +61,8 @@ const telemetry = {
   rpm: 0,
   latitude: spawnCoordinates.latitude,
   longitude: spawnCoordinates.longitude,
+  navigationMultiplier: 1,
+  coastDistanceMeters: 0,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -283,33 +290,20 @@ const vessel = createBoatSlot(selectBoatConfiguration(window.location.search));
 const boat = vessel.root;
 scene.add(boat);
 
-const island = createTestIsland();
-const islandEnabled = new URLSearchParams(window.location.search).get("island") !== "off";
-if (islandEnabled) scene.add(island.root);
-
-const markers = Array.from({ length: 26 }, (_, i) => {
-  const marker = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.13, 0.42, 8),
-    new THREE.MeshStandardMaterial({
-      color: i % 2 ? 0xffd166 : 0xef476f,
-      roughness: 0.55,
-    }),
-  );
-  marker.position.set(Math.sin(i * 5.19) * 54, 0.24, -18 - ((i * 37) % 118));
-  scene.add(marker);
-  return marker;
-});
+const coastalWorld = createCoastalWorld();
+scene.add(coastalWorld.root);
 
 const state = {
   x: 0,
   z: 0,
-  heading: 0,
+  heading: THREE.MathUtils.degToRad(spawnCoordinates.headingDegrees),
   speed: 0,
   throttleLevel: 0,
   rudder: 0,
   acceleration: 0,
   shoreZone: "clear",
   shoreDistance: 0,
+  navigationMultiplier: 1,
   impact: 0,
   collisionCount: 0,
   grounded: false,
@@ -328,40 +322,35 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
-function islandClearance(forwardX, forwardZ, radius = island.shoreRadius) {
-  if (!islandEnabled) return { clearance: Infinity, normalX: 0, normalZ: 0 };
+function coastClearance(forwardX, forwardZ) {
   const { physics } = vessel.profile;
   const rightX = -forwardZ;
   const rightZ = forwardX;
   const centerX = state.x + forwardX * physics.hullCenterForwardMeters;
   const centerZ = state.z + forwardZ * physics.hullCenterForwardMeters;
-  const deltaX = centerX - island.center.x;
-  const deltaZ = centerZ - island.center.z;
-  const distance = Math.max(0.0001, Math.hypot(deltaX, deltaZ));
-  const normalX = deltaX / distance;
-  const normalZ = deltaZ / distance;
-  const forwardProjection = normalX * forwardX + normalZ * forwardZ;
-  const rightProjection = normalX * rightX + normalZ * rightZ;
+  const coast = coastalWorld.closestShore(centerX, centerZ);
+  const forwardProjection = coast.normalX * forwardX + coast.normalZ * forwardZ;
+  const rightProjection = coast.normalX * rightX + coast.normalZ * rightZ;
   const hullRadius = Math.hypot(
     physics.lengthMeters * 0.5 * forwardProjection,
     physics.beamMeters * 0.5 * rightProjection,
   );
   return {
-    clearance: distance - radius - hullRadius,
-    normalX,
-    normalZ,
+    ...coast,
+    clearance: coast.signedDistanceWorldMeters - hullRadius,
+    hullRadius,
   };
 }
 
-function resolveIslandCollision(forwardX, forwardZ) {
-  const contact = islandClearance(forwardX, forwardZ);
+function resolveCoastCollision(forwardX, forwardZ) {
+  const contact = coastClearance(forwardX, forwardZ);
   if (contact.clearance >= 0) {
     state.grounded = false;
     return contact;
   }
 
-  state.x -= contact.normalX * contact.clearance;
-  state.z -= contact.normalZ * contact.clearance;
+  state.x += contact.normalX * -contact.clearance;
+  state.z += contact.normalZ * -contact.clearance;
   const direction = Math.sign(state.speed);
   const approach = Math.max(0, -(forwardX * direction * contact.normalX
     + forwardZ * direction * contact.normalZ));
@@ -410,11 +399,11 @@ function update(dt) {
   if (Math.abs(movementTarget - state.speed) < stopThreshold) state.speed = movementTarget;
   const approachHeadingX = Math.sin(state.heading);
   const approachHeadingZ = -Math.cos(state.heading);
-  const shallowContact = islandClearance(
-    approachHeadingX, approachHeadingZ, island.shallowRadius,
-  );
+  const shallowContact = coastClearance(approachHeadingX, approachHeadingZ);
   const shallowAmount = clamp(
-    -shallowContact.clearance / (island.shallowRadius - island.shoreRadius), 0, 1,
+    (150 - shallowContact.distanceActualMeters) / 150,
+    0,
+    1,
   );
   if (shallowAmount > 0) {
     const shallowSpeedLimit = Math.max(1.8, physics.maxSpeedKnots * 0.28);
@@ -438,13 +427,19 @@ function update(dt) {
 
   const forwardX = Math.sin(state.heading);
   const forwardZ = -Math.cos(state.heading);
-  const worldSpeed = state.speed * knotsToMetersPerSecond;
+  const coastBeforeMove = coastalWorld.closestShore(state.x, state.z);
+  state.navigationMultiplier = coastalWorld.navigationMultiplier(
+    coastBeforeMove.distanceActualMeters,
+  );
+  const worldSpeed = state.speed * knotsToMetersPerSecond
+    * state.navigationMultiplier / MAP_COMPRESSION;
   state.x += forwardX * worldSpeed * dt;
   state.z += forwardZ * worldSpeed * dt;
-  const shoreContact = resolveIslandCollision(forwardX, forwardZ);
-  const nearShore = islandClearance(forwardX, forwardZ, island.shallowRadius);
-  state.shoreZone = state.grounded ? "grounded" : nearShore.clearance < 0 ? "shallow" : "clear";
-  state.shoreDistance = Math.max(0, shoreContact.clearance);
+  const shoreContact = resolveCoastCollision(forwardX, forwardZ);
+  state.shoreDistance = Math.max(0, shoreContact.clearance * MAP_COMPRESSION);
+  state.shoreZone = state.grounded
+    ? "grounded"
+    : state.shoreDistance < 150 ? "shallow" : "clear";
   state.acceleration = clamp((state.speed - previousSpeed) / dt, -12, 12);
 
   vessel.update(dt, {
@@ -486,11 +481,6 @@ function update(dt) {
     -state.rudder * motion.heel * speedRatio * Math.sign(state.speed)
     + Math.sin(state.time * 1.2) * motion.roll;
 
-  markers.forEach((marker, index) => {
-    marker.position.y = 0.24 + Math.sin((state.time + index * 0.7) * 1.6) * 0.12;
-    marker.rotation.y += dt * 0.6;
-  });
-
   if (!cameraLook.dragging) {
     cameraLook.yaw = THREE.MathUtils.damp(cameraLook.yaw, 0, 2.4, dt);
     if (Math.abs(cameraLook.yaw) < 0.0005) cameraLook.yaw = 0;
@@ -526,16 +516,18 @@ function update(dt) {
     (state.fuelFraction * physics.fuelCapacityLiters).toFixed(1),
   );
   telemetry.rpm = instrumentRpm(physics, state.throttleLevel, state.speed);
-  telemetry.latitude = Number(
-    (spawnCoordinates.latitude - state.z / metersPerLatitudeDegree).toFixed(5),
-  );
-  telemetry.longitude = Number((spawnCoordinates.longitude
-    + state.x / (metersPerLatitudeDegree
-      * Math.cos(spawnCoordinates.latitude * Math.PI / 180))).toFixed(5));
+  const coordinates = coastalWorld.coordinatesFromWorld(state.x, state.z);
+  telemetry.latitude = Number(coordinates.latitude.toFixed(5));
+  telemetry.longitude = Number(coordinates.longitude.toFixed(5));
+  telemetry.navigationMultiplier = Number(state.navigationMultiplier.toFixed(2));
+  telemetry.coastDistanceMeters = Number(state.shoreDistance.toFixed(1));
 
   if (state.time - state.lastTelemetry > 0.12) {
     state.lastTelemetry = state.time;
     speedValue.textContent = telemetry.speed.toFixed(1);
+    travelMultiplierValue.textContent = state.navigationMultiplier < 1.05
+      ? "近岸 ×1"
+      : `巡航 ×${state.navigationMultiplier.toFixed(1)}`;
     throttleValue.textContent = telemetry.throttle < 0 ? "R" : String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
     bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
@@ -748,7 +740,7 @@ window.render_game_to_text = () =>
   JSON.stringify({
     mode: "sailing",
     model: vessel.configuration.model,
-    coordinateSystem: "x right and z forward-negative in metres; speed knots; heading degrees clockwise",
+    coordinateSystem: "local x east and z south in compressed world metres; geography WGS84; speed knots; heading degrees clockwise",
     boat: telemetry,
     physics: {
       lengthMeters: vessel.profile.physics.lengthMeters,
@@ -776,19 +768,34 @@ window.render_game_to_text = () =>
       activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
     },
     shore: {
-      active: islandEnabled,
+      active: true,
       zone: state.shoreZone,
-      distanceMeters: islandEnabled ? Number(state.shoreDistance.toFixed(2)) : null,
+      distanceMeters: Number(state.shoreDistance.toFixed(2)),
       impact: Number(state.impact.toFixed(2)),
       collisionCount: state.collisionCount,
-      island: {
-        x: island.center.x,
-        z: island.center.z,
-        shoreRadius: island.shoreRadius,
-        shallowRadius: island.shallowRadius,
+      geography: {
+        mapCompression: coastalWorld.mapCompression,
+        navigationMultiplier: Number(state.navigationMultiplier.toFixed(2)),
+        landMasses: coastalWorld.rings.map(({ id, name }) => ({ id, name })),
+        spawn: coastalWorld.spawn,
       },
     },
   });
+
+window.__sailingTest = {
+  setCoordinates(longitude, latitude) {
+    const projected = projectCoordinates(longitude, latitude);
+    state.x = projected.x;
+    state.z = projected.z;
+    update(1 / 60);
+    render();
+  },
+  setHeadingDegrees(degrees) {
+    state.heading = THREE.MathUtils.degToRad(degrees);
+    update(1 / 60);
+    render();
+  },
+};
 
 window.advanceTime = (ms) => {
   const steps = Math.max(1, Math.round(ms / (1000 / 60)));

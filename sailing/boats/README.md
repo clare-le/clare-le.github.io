@@ -133,7 +133,8 @@ current throttle detent is retained; raising it resumes power from that detent.
 The gameplay code owns movement, boat motion, water effects, and controls.
 `lengthMeters`, `beamMeters`, and `hullCenterForwardMeters` also define the
 rotated hull ellipse used for shoreline contact. Shore collision is resolved at
-the visible waterline; the island has no walkable surface or disembark action.
+the visible waterline against the shared Taiwan and Penghu coast polygons. Land
+has no walkable surface or disembark action.
 The model owns meshes and their animations. A different model can use its own
 internal structure without using the classic part registry.
 
