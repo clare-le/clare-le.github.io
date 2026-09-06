@@ -1,6 +1,7 @@
 import * as THREE from "./boats/three.js";
 import { createBoatSlot } from "./boats/index.js";
 import { selectBoatConfiguration } from "./boats/config.js";
+import { createTestIsland } from "./world/island.js";
 
 const mount = document.querySelector("#scene");
 const speedValue = document.querySelector("#speed");
@@ -8,6 +9,7 @@ const headingValue = document.querySelector("#heading");
 const throttleValue = document.querySelector("#throttle");
 const bearingValue = document.querySelector("#bearing");
 const loading = document.querySelector("#loading");
+const shoreStatus = document.querySelector("#shore-status");
 
 const controls = {
   left: false,
@@ -252,6 +254,10 @@ const vessel = createBoatSlot(selectBoatConfiguration(window.location.search));
 const boat = vessel.root;
 scene.add(boat);
 
+const island = createTestIsland();
+const islandEnabled = new URLSearchParams(window.location.search).get("island") !== "off";
+if (islandEnabled) scene.add(island.root);
+
 const markers = Array.from({ length: 26 }, (_, i) => {
   const marker = new THREE.Mesh(
     new THREE.CylinderGeometry(0.08, 0.13, 0.42, 8),
@@ -273,6 +279,11 @@ const state = {
   throttleLevel: 0,
   rudder: 0,
   acceleration: 0,
+  shoreZone: "clear",
+  shoreDistance: 0,
+  impact: 0,
+  collisionCount: 0,
+  grounded: false,
   time: 0,
   lastTelemetry: 0,
 };
@@ -286,8 +297,59 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
+function islandClearance(forwardX, forwardZ, radius = island.shoreRadius) {
+  if (!islandEnabled) return { clearance: Infinity, normalX: 0, normalZ: 0 };
+  const { physics } = vessel.profile;
+  const rightX = -forwardZ;
+  const rightZ = forwardX;
+  const centerX = state.x + forwardX * physics.hullCenterForwardMeters;
+  const centerZ = state.z + forwardZ * physics.hullCenterForwardMeters;
+  const deltaX = centerX - island.center.x;
+  const deltaZ = centerZ - island.center.z;
+  const distance = Math.max(0.0001, Math.hypot(deltaX, deltaZ));
+  const normalX = deltaX / distance;
+  const normalZ = deltaZ / distance;
+  const forwardProjection = normalX * forwardX + normalZ * forwardZ;
+  const rightProjection = normalX * rightX + normalZ * rightZ;
+  const hullRadius = Math.hypot(
+    physics.lengthMeters * 0.5 * forwardProjection,
+    physics.beamMeters * 0.5 * rightProjection,
+  );
+  return {
+    clearance: distance - radius - hullRadius,
+    normalX,
+    normalZ,
+  };
+}
+
+function resolveIslandCollision(forwardX, forwardZ) {
+  const contact = islandClearance(forwardX, forwardZ);
+  if (contact.clearance >= 0) {
+    state.grounded = false;
+    return contact;
+  }
+
+  state.x -= contact.normalX * contact.clearance;
+  state.z -= contact.normalZ * contact.clearance;
+  const direction = Math.sign(state.speed);
+  const approach = Math.max(0, -(forwardX * direction * contact.normalX
+    + forwardZ * direction * contact.normalZ));
+  const impactSpeed = Math.abs(state.speed) * approach;
+  if (!state.grounded && impactSpeed > 0.2) {
+    state.impact = Math.max(state.impact, clamp(impactSpeed / 6, 0.18, 1));
+    state.collisionCount += 1;
+  }
+  if (approach > 0) {
+    state.speed *= Math.max(0, 1 - approach * 1.35);
+    if (Math.abs(state.speed) < 0.08) state.speed = 0;
+  }
+  state.grounded = true;
+  return contact;
+}
+
 function update(dt) {
   state.time += dt;
+  state.impact = Math.max(0, state.impact - dt * 1.25);
   const { physics } = vessel.profile;
   const requestedTargetSpeed = targetSpeedForThrottle(physics, state.throttleLevel);
   const previousSpeed = state.speed;
@@ -306,7 +368,25 @@ function update(dt) {
   state.speed = THREE.MathUtils.damp(state.speed, movementTarget, speedResponse, dt);
   const stopThreshold = changingDirection ? 0.03 : 0.002;
   if (Math.abs(movementTarget - state.speed) < stopThreshold) state.speed = movementTarget;
-  state.acceleration = (state.speed - previousSpeed) / dt;
+  const approachHeadingX = Math.sin(state.heading);
+  const approachHeadingZ = -Math.cos(state.heading);
+  const shallowContact = islandClearance(
+    approachHeadingX, approachHeadingZ, island.shallowRadius,
+  );
+  const shallowAmount = clamp(
+    -shallowContact.clearance / (island.shallowRadius - island.shoreRadius), 0, 1,
+  );
+  if (shallowAmount > 0) {
+    const shallowSpeedLimit = Math.max(1.8, physics.maxSpeedKnots * 0.28);
+    const speedLimit = THREE.MathUtils.lerp(
+      physics.maxSpeedKnots, shallowSpeedLimit, shallowAmount,
+    );
+    if (Math.abs(state.speed) > speedLimit) {
+      state.speed = THREE.MathUtils.damp(
+        state.speed, Math.sign(state.speed) * speedLimit, 0.8 + shallowAmount * 1.8, dt,
+      );
+    }
+  }
 
   const turnInput = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
   const rudderResponse = 1 - Math.exp(-physics.rudderResponse * dt);
@@ -316,6 +396,17 @@ function update(dt) {
   const turnRate = physics.turnRateAtMax * (0.28 + speedRatio * 0.72);
   state.heading += state.rudder * turnRate * turnAuthority * Math.sign(state.speed) * dt;
 
+  const forwardX = Math.sin(state.heading);
+  const forwardZ = -Math.cos(state.heading);
+  const worldSpeed = state.speed * knotsToMetersPerSecond;
+  state.x += forwardX * worldSpeed * dt;
+  state.z += forwardZ * worldSpeed * dt;
+  const shoreContact = resolveIslandCollision(forwardX, forwardZ);
+  const nearShore = islandClearance(forwardX, forwardZ, island.shallowRadius);
+  state.shoreZone = state.grounded ? "grounded" : nearShore.clearance < 0 ? "shallow" : "clear";
+  state.shoreDistance = Math.max(0, shoreContact.clearance);
+  state.acceleration = clamp((state.speed - previousSpeed) / dt, -12, 12);
+
   vessel.update(dt, {
     rudder: state.rudder,
     throttle: state.throttleLevel < 0
@@ -323,16 +414,11 @@ function update(dt) {
       : state.throttleLevel / (physics.throttleCurve.length - 1),
     gear: Math.sign(state.throttleLevel),
     speed: state.speed,
-    speedRatio,
+    speedRatio: clamp(Math.abs(state.speed) / physics.maxSpeedKnots, 0, 1),
     heading: state.heading,
     time: state.time,
   });
 
-  const forwardX = Math.sin(state.heading);
-  const forwardZ = -Math.cos(state.heading);
-  const worldSpeed = state.speed * knotsToMetersPerSecond;
-  state.x += forwardX * worldSpeed * dt;
-  state.z += forwardZ * worldSpeed * dt;
   waterTime.value = state.time;
   updateBowSpray(dt, forwardX, forwardZ);
 
@@ -353,7 +439,8 @@ function update(dt) {
     + Math.sin(state.time * motion.heaveFrequency) * motion.heave, state.z);
   boat.rotation.y = -state.heading;
   boat.rotation.x = Math.sin(state.time * motion.pitchFrequency + speedRatio * 2) * motion.pitch
-    - state.acceleration * motion.accelerationPitch;
+    - state.acceleration * motion.accelerationPitch
+    + Math.sin(state.time * 34) * state.impact * 0.035;
   boat.rotation.z =
     -state.rudder * motion.heel * speedRatio * Math.sign(state.speed)
     + Math.sin(state.time * 1.2) * motion.roll;
@@ -374,6 +461,8 @@ function update(dt) {
     view.height + Math.sin(state.time * motion.heaveFrequency) * motion.cameraHeave,
     state.z - forwardZ * view.distance,
   );
+  camera.position.x += Math.cos(state.time * 41) * state.impact * 0.035;
+  camera.position.y += Math.sin(state.time * 37) * state.impact * 0.025;
   const lookHeading = state.heading + cameraLook.yaw;
   const lookDistance = view.lookAhead + view.distance;
   camera.lookAt(
@@ -398,6 +487,11 @@ function update(dt) {
     throttleValue.textContent = telemetry.throttle < 0 ? "R" : String(telemetry.throttle);
     headingValue.textContent = String(telemetry.heading);
     bearingValue.textContent = bearings[Math.round(telemetry.heading / 45) % 8];
+    shoreStatus.hidden = state.shoreZone === "clear";
+    shoreStatus.classList.toggle("impact", state.grounded && state.impact > 0.12);
+    shoreStatus.textContent = state.grounded
+      ? state.impact > 0.12 ? "碰岸" : "已靠岸"
+      : "淺水";
   }
 }
 
@@ -567,6 +661,19 @@ window.render_game_to_text = () =>
       sprayIntensity: Number((Math.max(0, state.speed)
         / vessel.profile.physics.maxSpeedKnots).toFixed(2)),
       activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
+    },
+    shore: {
+      active: islandEnabled,
+      zone: state.shoreZone,
+      distanceMeters: islandEnabled ? Number(state.shoreDistance.toFixed(2)) : null,
+      impact: Number(state.impact.toFixed(2)),
+      collisionCount: state.collisionCount,
+      island: {
+        x: island.center.x,
+        z: island.center.z,
+        shoreRadius: island.shoreRadius,
+        shallowRadius: island.shallowRadius,
+      },
     },
   });
 

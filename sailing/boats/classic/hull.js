@@ -197,6 +197,8 @@ export function createHull({ materials }) {
       waterline: 0.18,
       physics: {
         lengthMeters: 4.1,
+        beamMeters: 1.36,
+        hullCenterForwardMeters: 0.53,
         massKg: 820,
         enginePowerKw: 74.6,
         maxSpeedKnots: 24,

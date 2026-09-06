@@ -106,6 +106,8 @@ export function createCargoHull(materials) {
       waterline: 0.18,
       physics: {
         lengthMeters: 7.1,
+        beamMeters: 1.86,
+        hullCenterForwardMeters: 1.6,
         massKg: 4800,
         enginePowerKw: 110,
         maxSpeedKnots: 10.5,

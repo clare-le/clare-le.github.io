@@ -89,7 +89,8 @@ in `config.js`. It must return:
     spray: { forward, halfWidth },
     waterline,
     physics: {
-      lengthMeters, massKg, enginePowerKw, maxSpeedKnots,
+      lengthMeters, beamMeters, hullCenterForwardMeters,
+      massKg, enginePowerKw, maxSpeedKnots,
       reverseSpeedKnots, reverseThrustFactor,
       propulsionFactor, decelerationResponse, throttleCurve,
       rudderResponse, minSteerageKnots, turnRateAtMax,
@@ -123,6 +124,9 @@ A direction change first applies active braking to zero, then builds speed in th
 new direction. Rudder yaw and visual heel reverse with signed boat speed.
 
 The gameplay code owns movement, boat motion, water effects, and controls.
+`lengthMeters`, `beamMeters`, and `hullCenterForwardMeters` also define the
+rotated hull ellipse used for shoreline contact. Shore collision is resolved at
+the visible waterline; the island has no walkable surface or disembark action.
 The model owns meshes and their animations. A different model can use its own
 internal structure without using the classic part registry.
 
