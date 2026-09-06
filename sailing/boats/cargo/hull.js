@@ -82,9 +82,15 @@ export function createCargoHull(materials) {
     box(root, metal, [1.15, 0.015, 0.022], [0, 0.681, z]);
   }
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 2; i += 1) {
-      const a = i === 0 ? [side * 0.93, 0.43, -0.72] : [side * 0.93, 0.43, -3.9];
-      const b = i === 0 ? [side * 0.93, 0.43, -3.9] : [side * 0.52, 0.43, -4.8];
+    const bulwarkOutline = [
+      [side * 0.93, 0.43, -0.72],
+      [side * 0.93, 0.43, -3.9],
+      [side * 0.52, 0.43, -4.8],
+      [0, 0.43, -5.15],
+    ];
+    for (let i = 0; i < bulwarkOutline.length - 1; i += 1) {
+      const a = bulwarkOutline[i];
+      const b = bulwarkOutline[i + 1];
       panel(root, hull, [a, b, [b[0], 0.69, b[2]], [a[0], 0.69, a[2]]]);
       strut(root, metal, [a[0], 0.69, a[2]], [b[0], 0.69, b[2]], 0.019);
     }
