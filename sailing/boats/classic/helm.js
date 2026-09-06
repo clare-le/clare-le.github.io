@@ -77,7 +77,7 @@ export function createHelm({ materials }) {
     chromeMaterial,
   );
   throttleBase.position.set(0.35, 0.69, -0.17);
-  throttleBase.rotation.x = -0.3;
+  throttleBase.rotation.x = 0.3;
   boat.add(throttleBase);
 
   const throttleLever = new THREE.Group();
@@ -101,7 +101,7 @@ export function createHelm({ materials }) {
     chromeMaterial,
   );
   anchorBase.position.set(-0.35, 0.69, -0.17);
-  anchorBase.rotation.x = -0.3;
+  anchorBase.rotation.x = 0.3;
   boat.add(anchorBase);
 
   const anchorLever = new THREE.Group();
@@ -191,11 +191,11 @@ export function createHelm({ materials }) {
       wheelAssembly.rotation.z, wheelTarget, wheelResponse,
     );
     throttleLever.rotation.x = THREE.MathUtils.lerp(
-      throttleLever.rotation.x, -input.throttle * 0.48,
+      throttleLever.rotation.x, input.throttle * 0.48,
       dt === 0 ? 1 : 1 - Math.exp(-8 * dt),
     );
     anchorLever.rotation.x = THREE.MathUtils.lerp(
-      anchorLever.rotation.x, input.anchor ? -0.48 : 0,
+      anchorLever.rotation.x, input.anchor ? 0.48 : 0,
       dt === 0 ? 1 : 1 - Math.exp(-8 * dt),
     );
     speedGauge.needlePivot.rotation.z = -input.speedRatio * 2.3;
