@@ -104,6 +104,28 @@ export function createCargoHull(materials) {
       camera: { distance: 1.65, height: 1.72, lookAhead: 14, lookHeight: -0.65 },
       spray: { forward: 4.8, halfWidth: 0.5 },
       waterline: 0.18,
+      physics: {
+        lengthMeters: 7.1,
+        massKg: 4800,
+        enginePowerKw: 110,
+        maxSpeedKnots: 10.5,
+        propulsionFactor: 0.75,
+        decelerationResponse: 0.22,
+        throttleCurve: [0, 0.14, 0.31, 0.52, 0.75, 1],
+        rudderResponse: 3,
+        minSteerageKnots: 1.8,
+        turnRateAtMax: 0.23,
+        motion: {
+          heave: 0.038,
+          heaveFrequency: 1.35,
+          pitch: 0.011,
+          pitchFrequency: 1.05,
+          accelerationPitch: 0.003,
+          heel: 0.026,
+          roll: 0.007,
+          cameraHeave: 0.018,
+        },
+      },
     },
   };
 }

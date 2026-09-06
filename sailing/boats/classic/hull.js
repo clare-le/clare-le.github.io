@@ -195,6 +195,28 @@ export function createHull({ materials }) {
       camera: { distance: 1.45, height: 1.5, lookAhead: 13, lookHeight: -1.15 },
       spray: { forward: 2.45, halfWidth: 0.32 },
       waterline: 0.18,
+      physics: {
+        lengthMeters: 4.1,
+        massKg: 820,
+        enginePowerKw: 74.6,
+        maxSpeedKnots: 24,
+        propulsionFactor: 1,
+        decelerationResponse: 0.72,
+        throttleCurve: [0, 0.16, 0.34, 0.54, 0.76, 1],
+        rudderResponse: 7,
+        minSteerageKnots: 1.1,
+        turnRateAtMax: 0.65,
+        motion: {
+          heave: 0.085,
+          heaveFrequency: 2.1,
+          pitch: 0.032,
+          pitchFrequency: 1.65,
+          accelerationPitch: 0.008,
+          heel: 0.072,
+          roll: 0.018,
+          cameraHeave: 0.045,
+        },
+      },
     },
   };
 }

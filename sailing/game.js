@@ -23,19 +23,30 @@ const cameraLook = {
 };
 const maxCameraYaw = Math.PI / 2;
 
-const throttleSpeeds = [0, 1.3, 2.8, 4.5, 6.4, 8.5];
+const knotsToMetersPerSecond = 0.514444;
+const propulsionResponseScale = 24;
 const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
 
 const telemetry = {
   speed: 0,
   throttle: 0,
   targetSpeed: 0,
+  acceleration: 0,
   heading: 0,
   x: 0,
   z: 0,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+function accelerationResponse(physics) {
+  const powerPerTonne = physics.enginePowerKw / (physics.massKg / 1000);
+  return Math.sqrt(powerPerTonne) * physics.propulsionFactor / propulsionResponseScale;
+}
+
+function targetSpeedForThrottle(physics, throttleLevel) {
+  return physics.maxSpeedKnots * physics.throttleCurve[throttleLevel];
+}
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x87bdd5, 26, 185);
@@ -168,8 +179,9 @@ function waterHeight(x, z, time) {
 }
 
 function updateBowSpray(dt, forwardX, forwardZ) {
-  const { spray, waterline } = vessel.profile;
-  const intensity = clamp(state.speed / 8.5, 0, 1);
+  const { spray, waterline, physics } = vessel.profile;
+  const intensity = clamp(state.speed / physics.maxSpeedKnots, 0, 1);
+  const worldSpeed = state.speed * knotsToMetersPerSecond;
   const rightX = -forwardZ;
   const rightZ = forwardX;
   sprayEmission += dt * 100 * intensity;
@@ -181,15 +193,16 @@ function updateBowSpray(dt, forwardX, forwardZ) {
       const spread = 0.65 + Math.random() * 0.65;
       const x = state.x + forwardX * spray.forward + rightX * side * spray.halfWidth;
       const z = state.z + forwardZ * spray.forward + rightZ * side * spray.halfWidth;
-      const hullWaterline = waterline + Math.sin(state.time * 2.1) * 0.08;
+      const hullWaterline = waterline
+        + Math.sin(state.time * physics.motion.heaveFrequency) * physics.motion.heave;
       sprayPositions.set([x, Math.max(waterHeight(x, z, state.time), hullWaterline)
         + 0.08, z], index * 3);
       particle.age = 0;
       particle.life = 0.65 + Math.random() * 0.5;
       particle.vx = rightX * side * spread * (0.5 + intensity)
-        + forwardX * state.speed * 0.85;
+        + forwardX * worldSpeed * 0.85;
       particle.vz = rightZ * side * spread * (0.5 + intensity)
-        + forwardZ * state.speed * 0.85;
+        + forwardZ * worldSpeed * 0.85;
       particle.vy = 0.4 + intensity * (1.7 + Math.random() * 0.4);
       particle.size = 0.25 + intensity * 0.65;
     }
@@ -251,6 +264,7 @@ const state = {
   speed: 0,
   throttleLevel: 0,
   rudder: 0,
+  acceleration: 0,
   time: 0,
   lastTelemetry: 0,
 };
@@ -266,30 +280,38 @@ function resize() {
 
 function update(dt) {
   state.time += dt;
-  const targetSpeed = throttleSpeeds[state.throttleLevel];
-  const speedRate = targetSpeed > state.speed ? 2.15 : 2.8;
-  state.speed += clamp(targetSpeed - state.speed, -speedRate * dt, speedRate * dt);
+  const { physics } = vessel.profile;
+  const targetSpeed = targetSpeedForThrottle(physics, state.throttleLevel);
+  const previousSpeed = state.speed;
+  const speedResponse = targetSpeed > state.speed
+    ? accelerationResponse(physics)
+    : physics.decelerationResponse;
+  state.speed = THREE.MathUtils.damp(state.speed, targetSpeed, speedResponse, dt);
+  if (Math.abs(targetSpeed - state.speed) < 0.002) state.speed = targetSpeed;
+  state.acceleration = (state.speed - previousSpeed) / dt;
 
   const turnInput = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
-  const rudderResponse = 1 - Math.exp(-6 * dt);
+  const rudderResponse = 1 - Math.exp(-physics.rudderResponse * dt);
   state.rudder = THREE.MathUtils.lerp(state.rudder, turnInput, rudderResponse);
-  const turnAuthority = clamp(state.speed / 1.1, 0, 1);
-  state.heading +=
-    state.rudder * (0.38 + state.speed * 0.045) * turnAuthority * dt;
+  const speedRatio = clamp(state.speed / physics.maxSpeedKnots, 0, 1);
+  const turnAuthority = clamp(state.speed / physics.minSteerageKnots, 0, 1);
+  const turnRate = physics.turnRateAtMax * (0.28 + speedRatio * 0.72);
+  state.heading += state.rudder * turnRate * turnAuthority * dt;
 
   vessel.update(dt, {
     rudder: state.rudder,
-    throttle: state.throttleLevel / (throttleSpeeds.length - 1),
+    throttle: state.throttleLevel / (physics.throttleCurve.length - 1),
     speed: state.speed,
-    speedRatio: state.speed / throttleSpeeds[throttleSpeeds.length - 1],
+    speedRatio,
     heading: state.heading,
     time: state.time,
   });
 
   const forwardX = Math.sin(state.heading);
   const forwardZ = -Math.cos(state.heading);
-  state.x += forwardX * state.speed * dt;
-  state.z += forwardZ * state.speed * dt;
+  const worldSpeed = state.speed * knotsToMetersPerSecond;
+  state.x += forwardX * worldSpeed * dt;
+  state.z += forwardZ * worldSpeed * dt;
   waterTime.value = state.time;
   updateBowSpray(dt, forwardX, forwardZ);
 
@@ -305,14 +327,15 @@ function update(dt) {
 
   sea.position.set(state.x, 0, state.z);
   horizon.position.set(state.x, 0.05, state.z);
-  boat.position.set(state.x, vessel.profile.waterline + Math.sin(state.time * 2.1) * 0.08, state.z);
+  const motion = physics.motion;
+  boat.position.set(state.x, vessel.profile.waterline
+    + Math.sin(state.time * motion.heaveFrequency) * motion.heave, state.z);
   boat.rotation.y = -state.heading;
-  boat.rotation.x = Math.sin(state.time * 1.5 + state.speed) * 0.025;
-  const boatSpeedRatio =
-    state.speed / throttleSpeeds[throttleSpeeds.length - 1];
+  boat.rotation.x = Math.sin(state.time * motion.pitchFrequency + speedRatio * 2) * motion.pitch
+    - state.acceleration * motion.accelerationPitch;
   boat.rotation.z =
-    -state.rudder * (0.025 + boatSpeedRatio * 0.05) +
-    Math.sin(state.time * 1.2) * 0.018;
+    -state.rudder * motion.heel * speedRatio
+    + Math.sin(state.time * 1.2) * motion.roll;
 
   markers.forEach((marker, index) => {
     marker.position.y = 0.24 + Math.sin((state.time + index * 0.7) * 1.6) * 0.12;
@@ -327,7 +350,7 @@ function update(dt) {
   const view = vessel.profile.camera;
   camera.position.set(
     state.x - forwardX * view.distance,
-    view.height + Math.sin(state.time * 2.2) * 0.035,
+    view.height + Math.sin(state.time * motion.heaveFrequency) * motion.cameraHeave,
     state.z - forwardZ * view.distance,
   );
   const lookHeading = state.heading + cameraLook.yaw;
@@ -341,6 +364,7 @@ function update(dt) {
   telemetry.speed = Number(state.speed.toFixed(1));
   telemetry.throttle = state.throttleLevel;
   telemetry.targetSpeed = targetSpeed;
+  telemetry.acceleration = Number(state.acceleration.toFixed(2));
   telemetry.heading =
     Math.round((((state.heading * 180) / Math.PI) % 360 + 360) % 360) % 360;
   telemetry.x = Number(state.x.toFixed(1));
@@ -374,10 +398,11 @@ function setSteering(name, active, button) {
 }
 
 function adjustThrottle(delta) {
+  const { throttleCurve } = vessel.profile.physics;
   state.throttleLevel = clamp(
     state.throttleLevel + delta,
     0,
-    throttleSpeeds.length - 1,
+    throttleCurve.length - 1,
   );
   throttleValue.textContent = String(state.throttleLevel);
 }
@@ -499,8 +524,16 @@ window.render_game_to_text = () =>
   JSON.stringify({
     mode: "sailing",
     model: vessel.configuration.model,
-    coordinateSystem: "x right, z forward is negative, heading degrees clockwise",
+    coordinateSystem: "x right and z forward-negative in metres; speed knots; heading degrees clockwise",
     boat: telemetry,
+    physics: {
+      lengthMeters: vessel.profile.physics.lengthMeters,
+      massKg: vessel.profile.physics.massKg,
+      enginePowerKw: vessel.profile.physics.enginePowerKw,
+      maxSpeedKnots: vessel.profile.physics.maxSpeedKnots,
+      accelerationResponse: Number(accelerationResponse(vessel.profile.physics).toFixed(3)),
+      decelerationResponse: vessel.profile.physics.decelerationResponse,
+    },
     controls,
     camera: {
       yaw: Math.round(THREE.MathUtils.radToDeg(cameraLook.yaw)),
@@ -508,7 +541,7 @@ window.render_game_to_text = () =>
       limit: 90,
     },
     water: {
-      sprayIntensity: Number((state.speed / 8.5).toFixed(2)),
+      sprayIntensity: Number((state.speed / vessel.profile.physics.maxSpeedKnots).toFixed(2)),
       activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
     },
   });

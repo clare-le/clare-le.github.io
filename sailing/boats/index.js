@@ -10,10 +10,29 @@ function validateModel(model) {
     throw new Error("Boat factory must return root, update, dispose, and profile");
   }
   const profile = model.profile;
+  const physics = profile?.physics;
+  const motion = physics?.motion;
   for (const value of [profile?.waterline, profile?.camera?.distance,
     profile?.camera?.height, profile?.camera?.lookAhead, profile?.camera?.lookHeight,
-    profile?.spray?.forward, profile?.spray?.halfWidth]) {
-    if (!Number.isFinite(value)) throw new Error("Boat profile coordinates must be finite numbers");
+    profile?.spray?.forward, profile?.spray?.halfWidth,
+    physics?.lengthMeters, physics?.massKg, physics?.enginePowerKw,
+    physics?.maxSpeedKnots, physics?.propulsionFactor, physics?.decelerationResponse,
+    physics?.rudderResponse, physics?.minSteerageKnots, physics?.turnRateAtMax,
+    motion?.heave, motion?.heaveFrequency, motion?.pitch, motion?.pitchFrequency,
+    motion?.accelerationPitch, motion?.heel, motion?.roll, motion?.cameraHeave]) {
+    if (!Number.isFinite(value)) throw new Error("Boat profile values must be finite numbers");
+  }
+  for (const value of [physics.lengthMeters, physics.massKg, physics.enginePowerKw,
+    physics.maxSpeedKnots, physics.propulsionFactor, physics.decelerationResponse,
+    physics.rudderResponse, physics.minSteerageKnots, physics.turnRateAtMax]) {
+    if (value <= 0) throw new Error("Boat physical values must be positive");
+  }
+  const throttleCurve = physics.throttleCurve;
+  if (!Array.isArray(throttleCurve) || throttleCurve.length < 2
+      || throttleCurve[0] !== 0 || throttleCurve.at(-1) !== 1
+      || throttleCurve.some((value, index) => !Number.isFinite(value)
+        || value < 0 || value > 1 || (index && value <= throttleCurve[index - 1]))) {
+    throw new Error("Boat throttle curve must increase from 0 to 1");
   }
 }
 

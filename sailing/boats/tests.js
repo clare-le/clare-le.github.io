@@ -11,7 +11,7 @@ function assert(condition, message) {
 export function runBoatModuleTests() {
   const boatConfiguration = boatPresets.classic;
   const slot = createBoatSlot(boatConfiguration);
-  const input = { rudder: 0.7, throttle: 0.6, speed: 4.5, speedRatio: 4.5 / 8.5, heading: 1, time: 2 };
+  const input = { rudder: 0.7, throttle: 0.6, speed: 4.5, speedRatio: 4.5 / 24, heading: 1, time: 2 };
   const root = slot.root;
   root.position.set(10, 0.3, -20);
   root.rotation.y = 0.4;
@@ -58,7 +58,16 @@ export function runBoatModuleTests() {
     return {
       root,
       profile: { camera: { distance: 2, height: 2, lookAhead: 10, lookHeight: 0 },
-        spray: { forward: 3, halfWidth: 0.8 }, waterline: 0.25 },
+        spray: { forward: 3, halfWidth: 0.8 }, waterline: 0.25,
+        physics: {
+          lengthMeters: 5, massKg: 1200, enginePowerKw: 60, maxSpeedKnots: 15,
+          propulsionFactor: 1, decelerationResponse: 0.5,
+          throttleCurve: [0, 0.5, 1], rudderResponse: 5,
+          minSteerageKnots: 1, turnRateAtMax: 0.4,
+          motion: { heave: 0.05, heaveFrequency: 2, pitch: 0.02,
+            pitchFrequency: 1.5, accelerationPitch: 0.005, heel: 0.05,
+            roll: 0.01, cameraHeave: 0.03 },
+        } },
       update() {},
       dispose() { disposeModel(root); },
     };
@@ -83,6 +92,11 @@ export function runBoatModuleTests() {
   assert(cargoSlot.root.getObjectByName("cargo-wheel"), "Cargo model must contain its animated helm");
   assert(cargoSlot.profile.spray.forward === 4.8,
     "Cargo model must supply its own camera and spray profile");
+  assert(slot.profile.physics.maxSpeedKnots === 24
+      && cargoSlot.profile.physics.maxSpeedKnots === 10.5,
+    "Each boat model must supply its own performance profile");
+  assert(slot.profile.physics.massKg < cargoSlot.profile.physics.massKg,
+    "Cargo model must carry more simulated mass than the classic runabout");
   cargoSlot.update(0, input);
   cargoSlot.dispose();
   return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,

@@ -86,13 +86,35 @@ in `config.js`. It must return:
     camera: { distance, height, lookAhead, lookHeight },
     spray: { forward, halfWidth },
     waterline,
+    physics: {
+      lengthMeters, massKg, enginePowerKw, maxSpeedKnots,
+      propulsionFactor, decelerationResponse, throttleCurve,
+      rudderResponse, minSteerageKnots, turnRateAtMax,
+      motion: {
+        heave, heaveFrequency, pitch, pitchFrequency,
+        accelerationPitch, heel, roll, cameraHeave,
+      },
+    },
   },
   update(dt, input) {},
   dispose() {},
 }
 ```
 
-The profile defines the helm view, bow-spray origins, and base floating height.
+The profile defines the helm view, bow-spray origins, base floating height, and
+the boat-specific performance model. The gameplay code derives acceleration
+response from engine power per tonne, applies the model's propulsion factor,
+converts displayed knots to metres per second, and reads the remaining steering,
+deceleration, and motion values directly from the profile.
+
+Current values are gameplay estimates based on the meshes' metre-scale lengths,
+not manufacturer specifications:
+
+| Model | Length | Simulated mass | Engine | Maximum speed |
+| --- | ---: | ---: | ---: | ---: |
+| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 24 kn |
+| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 10.5 kn |
+
 The gameplay code owns movement, boat motion, water effects, and controls.
 The model owns meshes and their animations. A different model can use its own
 internal structure without using the classic part registry.
