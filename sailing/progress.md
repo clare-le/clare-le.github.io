@@ -35,3 +35,4 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Extended the same floor and side-wall boundary vertices beneath the camera so the cockpit remains visually closed at the bottom edge.
 - Verified the connected shell at 375 x 667, 393 x 852, and 1280 x 720. Acceleration and both steering directions update correctly, with no browser errors.
 - Rebuilt the bow flagstaff around one vertical anchor: the stem cap reaches the deck, the socket overlaps the pole base, and the pennant root intersects the pole. Flutter now deforms only the free tip so the attached edge cannot drift away.
+- Moved only the chase camera forward, reducing its trailing distance from 1.78 to 1.45 boat units. The boat model and its parts remain unchanged, while the full steering wheel stays above the throttle buttons on portrait phones.
