@@ -1,6 +1,6 @@
 import * as THREE from "./boats/three.js";
 import { createBoatSlot } from "./boats/index.js";
-import { boatConfiguration } from "./boats/config.js";
+import { selectBoatConfiguration } from "./boats/config.js";
 
 const mount = document.querySelector("#scene");
 const speedValue = document.querySelector("#speed");
@@ -218,7 +218,7 @@ horizon.rotation.x = -Math.PI / 2;
 horizon.position.y = 0.05;
 scene.add(horizon);
 
-const vessel = createBoatSlot(boatConfiguration);
+const vessel = createBoatSlot(selectBoatConfiguration(window.location.search));
 const boat = vessel.root;
 scene.add(boat);
 
@@ -441,6 +441,7 @@ document.addEventListener("fullscreenchange", resize);
 window.render_game_to_text = () =>
   JSON.stringify({
     mode: "sailing",
+    model: vessel.configuration.model,
     coordinateSystem: "x right, z forward is negative, heading degrees clockwise",
     boat: telemetry,
     controls,

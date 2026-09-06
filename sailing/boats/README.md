@@ -1,7 +1,10 @@
 # Modular Boats
 
-`config.js` selects the boat loaded by the game. The default is the existing
-classic runabout, with the same geometry, materials, animations, and camera.
+`config.js` selects the boat loaded by the game. The default is currently the
+small cargo boat; the original classic runabout remains available.
+
+- Small cargo boat: `/sailing/?boat=cargo`
+- Classic runabout: `/sailing/?boat=classic`
 
 ## Configuration
 
@@ -22,8 +25,9 @@ export const boatConfiguration = {
 ```
 
 Omitted parts use their defaults. Unknown models, part names, or material names
-throw an error. Currently there is one finished hull/helm style; modularity does
-not imply an existing catalog of other boat assets.
+throw an error. There are currently two finished models: `classic` and `cargo`.
+The classic model supports the interchangeable parts shown above. Cargo currently
+uses its matched workboat hull, wheelhouse, and helm assembly.
 
 ## Files and Ownership
 
@@ -35,6 +39,8 @@ not imply an existing catalog of other boat assets.
 - `classic/flag.js`: local flagstaff assembly and fixed-root pennant animation.
 - `classic/hardware.js`: navigation lights, horns, vents, cleats, and lifebuoy.
 - `classic/materials.js`: a fresh material palette for each boat instance.
+- `cargo/hull.js`: workboat hull, connected cabin shell, windows, and cargo hatch.
+- `cargo/helm.js`: five-spoke wheel, working gauges, throttle, and radio.
 - `three.js`: shared Three.js version for the game and every model module.
 - `tests.js`: browser-side contract and replacement tests.
 

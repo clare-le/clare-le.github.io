@@ -1,6 +1,6 @@
 import * as THREE from "./three.js";
 import { createBoatSlot, boatModels } from "./index.js";
-import { boatConfiguration } from "./config.js";
+import { boatPresets } from "./config.js";
 import { createClassicBoat, classicParts } from "./classic/index.js";
 import { disposeModel } from "./dispose.js";
 
@@ -9,6 +9,7 @@ function assert(condition, message) {
 }
 
 export function runBoatModuleTests() {
+  const boatConfiguration = boatPresets.classic;
   const slot = createBoatSlot(boatConfiguration);
   const input = { rudder: 0.7, throttle: 0.6, speed: 4.5, speedRatio: 4.5 / 8.5, heading: 1, time: 2 };
   const root = slot.root;
@@ -75,5 +76,15 @@ export function runBoatModuleTests() {
   assert(custom.root.getObjectByName("flag").position.z === -2.55,
     "A replacement part must use the hull mounting point");
   custom.dispose();
-  return { passed: true, checkedResources: resources.size, repeatedSwaps: 8 };
+
+  const cargoSlot = createBoatSlot(boatPresets.cargo);
+  assert(cargoSlot.configuration.model === "cargo", "Cargo preset must load the cargo model");
+  assert(cargoSlot.root.getObjectByName("cargo-hull"), "Cargo model must contain its hull");
+  assert(cargoSlot.root.getObjectByName("cargo-wheel"), "Cargo model must contain its animated helm");
+  assert(cargoSlot.profile.spray.forward === 4.8,
+    "Cargo model must supply its own camera and spray profile");
+  cargoSlot.update(0, input);
+  cargoSlot.dispose();
+  return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,
+    models: ["classic", "cargo"] };
 }
