@@ -43,12 +43,13 @@ canvas {
 
 .hud {
   position: absolute;
-  inset: max(16px, env(safe-area-inset-top)) 0 auto;
+  inset: max(16px, env(safe-area-inset-top)) 12px auto;
   display: grid;
-  grid-template-columns: 0.78fr 0.92fr 1fr 1.72fr 0.98fr 1fr;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   height: 66px;
   overflow: hidden;
-  border-block: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(230, 250, 255, 0.48);
+  border-radius: 16px;
   background: rgba(8, 28, 48, 0.42);
   box-shadow: 0 6px 18px rgba(5, 25, 40, 0.2);
   backdrop-filter: blur(8px);
@@ -240,10 +241,6 @@ canvas {
 }
 
 @media (max-width: 360px) {
-  .hud {
-    grid-template-columns: 0.75fr 0.9fr 1fr 1.68fr 1fr 1fr;
-  }
-
   .meter {
     padding-inline: 2px;
   }

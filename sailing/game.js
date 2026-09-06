@@ -542,8 +542,8 @@ function update(dt) {
     fuelValue.textContent = String(Math.round(telemetry.fuelPercent));
     fuelLitersValue.textContent = String(Math.round(telemetry.fuelLiters));
     rpmValue.textContent = telemetry.rpm.toLocaleString("en-US");
-    latitudeValue.textContent = `${telemetry.latitude.toFixed(4)}°N`;
-    longitudeValue.textContent = `${telemetry.longitude.toFixed(4)}°E`;
+    latitudeValue.textContent = `${telemetry.latitude.toFixed(2)}°N`;
+    longitudeValue.textContent = `${telemetry.longitude.toFixed(2)}°E`;
     shoreStatus.hidden = state.shoreZone === "clear" && !state.anchorDeployed;
     shoreStatus.classList.toggle("impact", state.grounded && state.impact > 0.12);
     shoreStatus.textContent = state.grounded && state.impact > 0.12
