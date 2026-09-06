@@ -14,6 +14,15 @@ const controls = {
   right: false,
 };
 
+const cameraLook = {
+  yaw: 0,
+  dragging: false,
+  pointerId: null,
+  startX: 0,
+  startYaw: 0,
+};
+const maxCameraYaw = Math.PI / 2;
+
 const throttleSpeeds = [0, 1.3, 2.8, 4.5, 6.4, 8.5];
 const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
 
@@ -310,16 +319,23 @@ function update(dt) {
     marker.rotation.y += dt * 0.6;
   });
 
+  if (!cameraLook.dragging) {
+    cameraLook.yaw = THREE.MathUtils.damp(cameraLook.yaw, 0, 2.4, dt);
+    if (Math.abs(cameraLook.yaw) < 0.0005) cameraLook.yaw = 0;
+  }
+
   const view = vessel.profile.camera;
   camera.position.set(
     state.x - forwardX * view.distance,
     view.height + Math.sin(state.time * 2.2) * 0.035,
     state.z - forwardZ * view.distance,
   );
+  const lookHeading = state.heading + cameraLook.yaw;
+  const lookDistance = view.lookAhead + view.distance;
   camera.lookAt(
-    state.x + forwardX * view.lookAhead,
+    camera.position.x + Math.sin(lookHeading) * lookDistance,
     view.lookHeight + Math.sin(state.time * 1.1) * 0.12,
-    state.z + forwardZ * view.lookAhead,
+    camera.position.z - Math.cos(lookHeading) * lookDistance,
   );
 
   telemetry.speed = Number(state.speed.toFixed(1));
@@ -366,6 +382,45 @@ function adjustThrottle(delta) {
   throttleValue.textContent = String(state.throttleLevel);
 }
 
+function beginCameraLook(event) {
+  if (!event.isPrimary || cameraLook.pointerId !== null) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const relativeX = (event.clientX - rect.left) / rect.width;
+  const relativeY = (event.clientY - rect.top) / rect.height;
+  if (relativeX < 0.15 || relativeX > 0.85
+      || relativeY < 0.12 || relativeY > 0.74) return;
+  event.preventDefault();
+  cameraLook.dragging = true;
+  cameraLook.pointerId = event.pointerId;
+  cameraLook.startX = event.clientX;
+  cameraLook.startYaw = cameraLook.yaw;
+  renderer.domElement.setPointerCapture(event.pointerId);
+}
+
+function moveCameraLook(event) {
+  if (event.pointerId !== cameraLook.pointerId) return;
+  event.preventDefault();
+  const width = renderer.domElement.getBoundingClientRect().width;
+  const dragRange = Math.max(1, width * 0.42);
+  cameraLook.yaw = clamp(
+    cameraLook.startYaw + (event.clientX - cameraLook.startX) / dragRange * maxCameraYaw,
+    -maxCameraYaw,
+    maxCameraYaw,
+  );
+}
+
+function endCameraLook(event) {
+  if (event.pointerId !== cameraLook.pointerId) return;
+  cameraLook.dragging = false;
+  cameraLook.pointerId = null;
+}
+
+renderer.domElement.addEventListener("pointerdown", beginCameraLook);
+renderer.domElement.addEventListener("pointermove", moveCameraLook);
+for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  renderer.domElement.addEventListener(eventName, endCameraLook);
+}
+
 document.querySelectorAll("[data-control]").forEach((button) => {
   const name = button.dataset.control;
   button.addEventListener("pointerdown", (event) => {
@@ -397,6 +452,8 @@ function releaseControls() {
   document.querySelectorAll(".control.active").forEach((button) => {
     button.classList.remove("active");
   });
+  cameraLook.dragging = false;
+  cameraLook.pointerId = null;
 }
 
 function onKey(event, pressed) {
@@ -445,6 +502,11 @@ window.render_game_to_text = () =>
     coordinateSystem: "x right, z forward is negative, heading degrees clockwise",
     boat: telemetry,
     controls,
+    camera: {
+      yaw: Math.round(THREE.MathUtils.radToDeg(cameraLook.yaw)),
+      dragging: cameraLook.dragging,
+      limit: 90,
+    },
     water: {
       sprayIntensity: Number((state.speed / 8.5).toFixed(2)),
       activeSprayParticles: sprayParticles.filter((p) => p.age < p.life).length,
