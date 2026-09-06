@@ -848,7 +848,7 @@ function update(dt) {
 
   camera.position.set(
     state.x - forwardX * 1.45,
-    1.58 + Math.sin(state.time * 2.2) * 0.035,
+    1.5 + Math.sin(state.time * 2.2) * 0.035,
     state.z - forwardZ * 1.45,
   );
   camera.lookAt(
