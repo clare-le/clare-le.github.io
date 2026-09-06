@@ -115,10 +115,10 @@ deceleration, engine-instrument, fuel, and motion values directly from the profi
 Current values are gameplay estimates based on the meshes' metre-scale lengths,
 not manufacturer specifications:
 
-| Model | Length | Simulated mass | Engine | RPM range | Fuel | Forward max | Reverse max |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Classic runabout | 4.1 m | 820 kg | 74.6 kW / 100 hp | 750-5,200 | 95 L | 24 kn | 4.5 kn |
-| Small cargo boat | 7.1 m | 4,800 kg | 110 kW / 148 hp | 650-2,800 | 360 L | 10.5 kn | 3.5 kn |
+| Model | Length | Beam | Simulated mass | Engine | RPM range | Fuel | Forward max | Reverse max |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Classic runabout | 4.1 m | 1.36 m | 820 kg | 74.6 kW / 100 hp | 750-5,200 | 95 L | 24 kn | 4.5 kn |
+| Small cargo boat | 7.1 m | 2.30 m | 4,800 kg | 110 kW / 148 hp | 650-2,800 | 360 L | 10.5 kn | 3.5 kn |
 
 The shared control has one reverse detent below neutral: `R, 0, 1, 2, 3, 4, 5`.
 A direction change first applies active braking to zero, then builds speed in the

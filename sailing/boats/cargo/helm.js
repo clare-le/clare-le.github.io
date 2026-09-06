@@ -54,8 +54,8 @@ export function createCargoHelm(materials) {
     return pivot;
   }
   const speed = gauge(0, 0.073, "KN", [0, 2, 4, 6, 8, 10]);
-  const rpm = gauge(-0.21, 0.062, "RPM", [0, 1, 2, 3]);
-  const heading = gauge(0.21, 0.062, "HDG", [0, 90, 180, 270, 360]);
+  const rpm = gauge(-0.29, 0.062, "RPM", [0, 1, 2, 3]);
+  const heading = gauge(0.29, 0.062, "HDG", [0, 90, 180, 270, 360]);
 
   const wheel = new THREE.Group();
   wheel.name = "cargo-wheel";
@@ -72,11 +72,11 @@ export function createCargoHelm(materials) {
   }
   root.add(wheel);
 
-  const throttleBase = box(root, floor, [0.105, 0.17, 0.07], [0.53, 0.845, -0.25]);
+  const throttleBase = box(root, floor, [0.105, 0.17, 0.07], [0.55, 0.845, -0.25]);
   throttleBase.rotation.x = -0.2;
   const lever = new THREE.Group();
   lever.name = "cargo-throttle";
-  lever.position.set(0.53, 0.88, -0.19);
+  lever.position.set(0.55, 0.88, -0.19);
   strut(lever, metal, [0, 0, 0], [0, 0.16, 0], 0.009);
   const grip = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.035, 4, 10), accent);
   grip.position.y = 0.16;
@@ -84,11 +84,11 @@ export function createCargoHelm(materials) {
   lever.add(grip);
   root.add(lever);
 
-  const anchorBase = box(root, floor, [0.105, 0.17, 0.07], [-0.53, 0.845, -0.25]);
+  const anchorBase = box(root, floor, [0.105, 0.17, 0.07], [-0.55, 0.845, -0.25]);
   anchorBase.rotation.x = -0.2;
   const anchorLever = new THREE.Group();
   anchorLever.name = "anchor-control";
-  anchorLever.position.set(-0.53, 0.88, -0.19);
+  anchorLever.position.set(-0.55, 0.88, -0.19);
   strut(anchorLever, metal, [0, 0, 0], [0, 0.16, 0], 0.009);
   const anchorGrip = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.035, 4, 10), accent);
   anchorGrip.position.y = 0.16;
