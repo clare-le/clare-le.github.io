@@ -4,7 +4,7 @@ import { PENGHU_MAIN, TAIWAN_MAIN } from "../../world/coast-data.js";
 
 const kilometersPerLatitudeDegree = 110.574;
 const kilometersPerLongitudeDegreeAtEquator = 111.32;
-const navigationRangeKilometers = 20;
+const navigationRangeKilometers = 1;
 
 function drawDisplayGrid(context) {
   context.strokeStyle = "rgba(80, 215, 229, 0.28)";
@@ -133,6 +133,7 @@ function updateNavigationDisplay(display, input) {
     latitude: input.latitude,
     longitude: input.longitude,
     heading: input.heading,
+    rangeKilometers: navigationRangeKilometers,
   };
 }
 

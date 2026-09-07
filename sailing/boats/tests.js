@@ -126,7 +126,8 @@ export function runBoatModuleTests() {
     ?.userData.navigation;
   assert(yachtNavigation?.latitude === input.latitude
       && yachtNavigation.longitude === input.longitude
-      && yachtNavigation.heading === input.heading,
+      && yachtNavigation.heading === input.heading
+      && yachtNavigation.rangeKilometers === 1,
     "Yacht navigation screen must receive live geography and heading");
   yachtSlot.dispose();
   return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,
