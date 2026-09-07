@@ -20,11 +20,18 @@
         <strong><b id="fuel">100</b><i>%</i></strong>
         <small><b id="fuel-liters">360</b> L</small>
       </div>
-      <div class="meter meter-rpm">
+      <button
+        class="meter meter-rpm panel-trigger"
+        id="engine-panel-trigger"
+        data-panel-trigger="engine"
+        aria-controls="instrument-drawer"
+        aria-expanded="false"
+        type="button"
+      >
         <span>RPM</span>
         <strong id="rpm">650</strong>
         <small>檔位 <b id="throttle">0</b></small>
-      </div>
+      </button>
       <div class="meter meter-speed">
         <span>航速</span>
         <strong><b id="speed">0.0</b><i>kn</i></strong>
@@ -32,18 +39,94 @@
       </div>
       <div class="meter meter-position">
         <span>經緯度</span>
-        <strong id="latitude">25.15°N</strong>
-        <small id="longitude">121.78°E</small>
+        <strong id="latitude">22.61°N</strong>
+        <small id="longitude">120.29°E</small>
       </div>
-      <div class="meter meter-bearing">
+      <button
+        class="meter meter-bearing panel-trigger"
+        id="gps-panel-trigger"
+        data-panel-trigger="gps"
+        aria-controls="instrument-drawer"
+        aria-expanded="false"
+        type="button"
+      >
         <span>導航方向</span>
-        <strong id="bearing">北</strong>
-      </div>
+        <strong id="bearing">西北</strong>
+      </button>
       <div class="meter meter-heading">
         <span>航向</span>
         <strong><b id="heading">0</b><i>°</i></strong>
       </div>
     </div>
+
+    <section
+      class="instrument-drawer"
+      id="instrument-drawer"
+      aria-label="儀表詳細資訊"
+      aria-hidden="true"
+    >
+      <div class="instrument-panel" data-instrument-panel="gps" hidden>
+        <header class="panel-header">
+          <div>
+            <small>GPS CHART</small>
+            <h2>台灣海域</h2>
+          </div>
+          <button class="panel-close" data-panel-close type="button" aria-label="關閉 GPS 海圖">×</button>
+        </header>
+        <canvas id="gps-chart" class="gps-chart" aria-label="台灣與澎湖 GPS 海圖"></canvas>
+        <footer class="gps-readout">
+          <strong id="gps-position">22.6050°N 120.2870°E</strong>
+          <span><b id="gps-course">315°</b> · <b id="gps-scale">近岸 ×1</b></span>
+        </footer>
+      </div>
+
+      <div class="instrument-panel" data-instrument-panel="engine" hidden>
+        <header class="panel-header">
+          <div>
+            <small>ENGINE MONITOR</small>
+            <h2 id="engine-model">小貨船柴油機</h2>
+          </div>
+          <button class="panel-close" data-panel-close type="button" aria-label="關閉引擎狀態">×</button>
+        </header>
+        <div class="engine-primary">
+          <div>
+            <span>轉速</span>
+            <strong><b id="engine-detail-rpm">650</b> <i>RPM</i></strong>
+          </div>
+          <div>
+            <span>狀態</span>
+            <strong id="engine-condition">正常</strong>
+          </div>
+        </div>
+        <div class="engine-readings">
+          <div class="engine-reading">
+            <span>引擎負載</span>
+            <strong><b id="engine-load">6</b>%</strong>
+            <div class="engine-bar"><i id="engine-load-bar"></i></div>
+          </div>
+          <div class="engine-reading">
+            <span>冷卻水溫</span>
+            <strong><b id="engine-temperature">72</b>°C</strong>
+          </div>
+          <div class="engine-reading">
+            <span>機油壓力</span>
+            <strong><b id="engine-oil-pressure">1.6</b> bar</strong>
+          </div>
+          <div class="engine-reading">
+            <span>充電電壓</span>
+            <strong><b id="engine-voltage">13.8</b> V</strong>
+          </div>
+          <div class="engine-reading">
+            <span>即時耗油</span>
+            <strong><b id="engine-fuel-flow">1.7</b> L/h</strong>
+          </div>
+          <div class="engine-reading">
+            <span>檔位</span>
+            <strong id="engine-gear">N</strong>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div id="shore-status" role="status" hidden></div>
 

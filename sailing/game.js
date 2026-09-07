@@ -7,6 +7,7 @@ import {
   MAP_COMPRESSION,
   projectCoordinates,
 } from "./world/geography.js";
+import { createInstrumentPanels } from "./ui/instrument-panels.js";
 
 const mount = document.querySelector("#scene");
 const speedValue = document.querySelector("#speed");
@@ -21,6 +22,7 @@ const latitudeValue = document.querySelector("#latitude");
 const longitudeValue = document.querySelector("#longitude");
 const loading = document.querySelector("#loading");
 const shoreStatus = document.querySelector("#shore-status");
+const instrumentPanels = createInstrumentPanels();
 
 const controls = {
   left: false,
@@ -63,6 +65,15 @@ const telemetry = {
   longitude: spawnCoordinates.longitude,
   navigationMultiplier: 1,
   coastDistanceMeters: 0,
+  engine: {
+    rpm: 0,
+    loadPercent: 6,
+    temperatureCelsius: 72,
+    oilPressureBar: 1.6,
+    voltage: 13.8,
+    fuelFlowLitersPerHour: 0,
+    condition: "正常",
+  },
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -309,6 +320,7 @@ const state = {
   grounded: false,
   anchorDeployed: false,
   fuelFraction: 1,
+  engineTemperature: vessel.configuration.model === "cargo" ? 72 : 76,
   time: 0,
   lastTelemetry: 0,
 };
@@ -516,6 +528,29 @@ function update(dt) {
     (state.fuelFraction * physics.fuelCapacityLiters).toFixed(1),
   );
   telemetry.rpm = instrumentRpm(physics, state.throttleLevel, state.speed);
+  const rpmRange = Math.max(1, physics.maxRpm - physics.idleRpm);
+  const rpmRatio = clamp((telemetry.rpm - physics.idleRpm) / rpmRange, 0, 1);
+  const engineLoadPercent = fuelLoad * 100;
+  const temperatureTarget = (vessel.configuration.model === "cargo" ? 71 : 75)
+    + engineLoadPercent * (vessel.configuration.model === "cargo" ? 0.18 : 0.2);
+  state.engineTemperature = THREE.MathUtils.damp(
+    state.engineTemperature,
+    temperatureTarget,
+    0.12,
+    dt,
+  );
+  telemetry.engine = {
+    rpm: telemetry.rpm,
+    loadPercent: Number(engineLoadPercent.toFixed(1)),
+    temperatureCelsius: Number(state.engineTemperature.toFixed(1)),
+    oilPressureBar: Number((1.55 + rpmRatio
+      * (vessel.configuration.model === "cargo" ? 2.9 : 3.25)).toFixed(2)),
+    voltage: Number((13.9 - engineLoadPercent * 0.002).toFixed(2)),
+    fuelFlowLitersPerHour: Number(
+      (physics.fullLoadFuelLitersPerHour * fuelLoad).toFixed(2),
+    ),
+    condition: state.engineTemperature > 98 || state.fuelFraction < 0.08 ? "注意" : "正常",
+  };
   const coordinates = coastalWorld.coordinatesFromWorld(state.x, state.z);
   telemetry.latitude = Number(coordinates.latitude.toFixed(5));
   telemetry.longitude = Number(coordinates.longitude.toFixed(5));
@@ -536,6 +571,7 @@ function update(dt) {
     rpmValue.textContent = telemetry.rpm.toLocaleString("en-US");
     latitudeValue.textContent = `${telemetry.latitude.toFixed(2)}°N`;
     longitudeValue.textContent = `${telemetry.longitude.toFixed(2)}°E`;
+    instrumentPanels.update({ model: vessel.configuration.model, ...telemetry });
     shoreStatus.hidden = state.shoreZone === "clear" && !state.anchorDeployed;
     shoreStatus.classList.toggle("impact", state.grounded && state.impact > 0.12);
     shoreStatus.textContent = state.grounded && state.impact > 0.12
@@ -753,6 +789,9 @@ window.render_game_to_text = () =>
       anchorBrakeResponse: vessel.profile.physics.anchorBrakeResponse,
     },
     controls,
+    ui: {
+      activePanel: instrumentPanels.activePanel,
+    },
     camera: {
       yaw: Math.round(THREE.MathUtils.radToDeg(cameraLook.yaw)),
       dragging: cameraLook.dragging,
