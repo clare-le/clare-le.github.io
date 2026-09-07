@@ -27,13 +27,11 @@ cranes. Container yards use instanced meshes so a large stack remains cheap to
 draw on mobile hardware.
 
 `kaohsiung-port.js` is only a WGS84 layout. It places instances of those shared
-models at the Qijin and Qianzhen container terminals. Add another port by
+models inside the land polygon shown by the simplified Kaohsiung map. Add another port by
 creating a separate layout module and passing `projectCoordinates` into its
 factory; do not duplicate the model-building code.
 
-Each terminal includes a full-depth reclaimed concrete apron that rises from
-below sea level to the same height as the coastal land. Buildings and container
-yards must fit entirely inside that footprint. Gantry crane legs remain on the
-apron while only their loading booms project over the water.
-The apron rectangles also participate in the shared shoreline collision query,
-so a vessel cannot pass through the reclaimed terminal land.
+The terminal's paved apron sits on the existing coastal terrain rather than
+creating new land in mapped water. Automated footprint sampling verifies the
+whole apron against the authoritative land polygon. Buildings, container yards,
+and gantry-crane supports must also fit entirely inside the apron.

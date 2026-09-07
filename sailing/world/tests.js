@@ -1,5 +1,5 @@
 import * as THREE from "../boats/three.js";
-import { projectCoordinates } from "./geography.js";
+import { isPointOnMappedLand, projectCoordinates } from "./geography.js";
 import { createKaohsiungPort, KAOHSIUNG_PORT_LAYOUT } from "./kaohsiung-port.js";
 
 function assert(condition, message) {
@@ -20,13 +20,9 @@ export function runPortAssetTests() {
     if (object.name.includes("-building-")) buildings.push(object);
   });
 
-  assert(port.root.children.length === 2, "Kaohsiung should have two terminal layouts");
-  assert(port.collisionRings.length === 2, "each terminal should expose a collision ring");
-  assert(port.collisionRings.every(({ ring }) => ring.length === 5
-    && ring[0].x === ring[4].x && ring[0].z === ring[4].z),
-  "terminal collision rings should be closed rectangles");
-  assert(cranes.length === 5, "Kaohsiung should reuse five gantry cranes");
-  assert(buildings.length === 4, "Kaohsiung should reuse four port buildings");
+  assert(port.root.children.length === 1, "Kaohsiung should have one mapped-land terminal");
+  assert(cranes.length === 3, "Kaohsiung should reuse three gantry cranes");
+  assert(buildings.length === 2, "Kaohsiung should reuse two port buildings");
   assert(containerMeshes.length > 3, "container stacks should be color-batched instanced meshes");
   assert(
     new Set(containerMeshes.map((mesh) => mesh.geometry)).size === 1,
@@ -44,6 +40,18 @@ export function runPortAssetTests() {
   KAOHSIUNG_PORT_LAYOUT.forEach((layout) => {
     const halfWidth = layout.quay.width / 2;
     const halfDepth = layout.quay.depth / 2;
+    const center = projectCoordinates(layout.longitude, layout.latitude);
+    const rotation = THREE.MathUtils.degToRad(layout.rotationDegrees);
+    for (let xStep = -5; xStep <= 5; xStep += 1) {
+      for (let zStep = -5; zStep <= 5; zStep += 1) {
+        const x = xStep * layout.quay.width / 10;
+        const z = zStep * layout.quay.depth / 10;
+        const worldX = center.x + Math.cos(rotation) * x + Math.sin(rotation) * z;
+        const worldZ = center.z - Math.sin(rotation) * x + Math.cos(rotation) * z;
+        assert(isPointOnMappedLand(worldX, worldZ),
+          `${layout.id} footprint should remain inside mapped land`);
+      }
+    }
     layout.buildings.forEach((building) => {
       assert(Math.abs(building.x) + building.width / 2 <= halfWidth,
         `${layout.id} building should remain on the quay width`);
@@ -68,7 +76,6 @@ export function runPortAssetTests() {
 
   const result = {
     terminals: port.root.children.length,
-    collisionRings: port.collisionRings.length,
     cranes: cranes.length,
     buildings: buildings.length,
     containerBatches: containerMeshes.length,

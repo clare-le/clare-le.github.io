@@ -63,6 +63,10 @@ function pointInRing(x, z, ring) {
   return inside;
 }
 
+export function isPointOnMappedLand(x, z) {
+  return landMasses.some((land) => pointInRing(x, z, projectedRing(land.coordinates)));
+}
+
 function nearestPointOnSegment(x, z, a, b) {
   const dx = b.x - a.x;
   const dz = b.z - a.z;
@@ -170,11 +174,10 @@ export function createCoastalWorld() {
   addHarborBuoys(root);
   const kaohsiungPort = createKaohsiungPort(projectCoordinates);
   root.add(kaohsiungPort.root);
-  const collisionRings = [...rings, ...kaohsiungPort.collisionRings];
 
   function closestShore(x, z) {
     let closest = null;
-    for (const land of collisionRings) {
+    for (const land of rings) {
       const inside = pointInRing(x, z, land.ring);
       for (let i = 0; i < land.ring.length - 1; i += 1) {
         const candidate = nearestPointOnSegment(x, z, land.ring[i], land.ring[i + 1]);
@@ -205,7 +208,6 @@ export function createCoastalWorld() {
     coordinatesFromWorld,
     navigationMultiplier,
     ports: kaohsiungPort.facilities,
-    portCollisionRings: kaohsiungPort.collisionRings,
     mapCompression: MAP_COMPRESSION,
     spawn: KAOHSIUNG_SPAWN,
   };
