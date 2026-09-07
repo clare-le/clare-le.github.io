@@ -791,6 +791,7 @@ window.render_game_to_text = () =>
     controls,
     ui: {
       activePanel: instrumentPanels.activePanel,
+      gpsRangeKilometers: instrumentPanels.chartRangeKilometers,
     },
     camera: {
       yaw: Math.round(THREE.MathUtils.radToDeg(cameraLook.yaw)),

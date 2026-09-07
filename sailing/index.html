@@ -67,9 +67,14 @@
     >
       <div class="instrument-panel" data-instrument-panel="gps" hidden>
         <header class="panel-header">
-          <div>
+          <div class="panel-title">
             <small>GPS CHART</small>
             <h2>台灣海域</h2>
+          </div>
+          <div class="chart-ranges" role="group" aria-label="海圖顯示範圍">
+            <button data-chart-range="1" aria-pressed="false" type="button">1 km</button>
+            <button data-chart-range="10" aria-pressed="false" type="button">10 km</button>
+            <button class="selected" data-chart-range="100" aria-pressed="true" type="button">100 km</button>
           </div>
           <button class="panel-close" data-panel-close type="button" aria-label="關閉 GPS 海圖">×</button>
         </header>
@@ -82,7 +87,7 @@
 
       <div class="instrument-panel" data-instrument-panel="engine" hidden>
         <header class="panel-header">
-          <div>
+          <div class="panel-title">
             <small>ENGINE MONITOR</small>
             <h2 id="engine-model">小貨船柴油機</h2>
           </div>

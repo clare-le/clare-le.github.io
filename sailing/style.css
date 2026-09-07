@@ -210,10 +210,15 @@ button.meter {
 .panel-header {
   display: flex;
   min-height: 45px;
+  gap: 8px;
   padding: 8px 9px 7px 12px;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(220, 244, 245, 0.14);
+}
+
+.panel-title {
+  min-width: 58px;
 }
 
 .panel-header small,
@@ -228,6 +233,42 @@ button.meter {
   font-size: 8px;
   font-weight: 750;
   line-height: 1;
+}
+
+.chart-ranges {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  margin-left: auto;
+  overflow: hidden;
+  border: 1px solid rgba(175, 218, 222, 0.3);
+  border-radius: 4px;
+}
+
+.chart-ranges button {
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid rgba(175, 218, 222, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: #b9dadd;
+  font: 700 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  touch-action: manipulation;
+}
+
+.chart-ranges button:last-child {
+  border-right: 0;
+}
+
+.chart-ranges button.selected {
+  background: #d6931b;
+  color: #fff;
+}
+
+.chart-ranges button:focus-visible {
+  position: relative;
+  outline: 2px solid #fff;
+  outline-offset: -3px;
 }
 
 .panel-header h2 {
@@ -534,5 +575,17 @@ button.meter {
 
   .engine-reading strong {
     font-size: 12px;
+  }
+
+  .panel-header {
+    gap: 6px;
+  }
+
+  .chart-ranges {
+    grid-template-columns: repeat(3, 42px);
+  }
+
+  .chart-ranges button {
+    font-size: 8px;
   }
 }

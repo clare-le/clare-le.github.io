@@ -1,11 +1,7 @@
 import { PENGHU_MAIN, TAIWAN_MAIN } from "../world/coast-data.js";
 
-const mapBounds = {
-  minLongitude: 119.42,
-  maxLongitude: 122.08,
-  minLatitude: 21.82,
-  maxLatitude: 25.36,
-};
+const kilometersPerLatitudeDegree = 110.574;
+const kilometersPerLongitudeDegreeAtEquator = 111.32;
 
 const element = (selector) => document.querySelector(selector);
 
@@ -13,9 +9,11 @@ export function createInstrumentPanels() {
   const drawer = element("#instrument-drawer");
   const triggers = [...document.querySelectorAll("[data-panel-trigger]")];
   const panels = [...document.querySelectorAll("[data-instrument-panel]")];
+  const rangeButtons = [...document.querySelectorAll("[data-chart-range]")];
   const chart = element("#gps-chart");
   const context = chart.getContext("2d");
   let activePanel = null;
+  let chartRangeKilometers = 100;
   let latest = null;
 
   const fields = {
@@ -51,47 +49,40 @@ export function createInstrumentPanels() {
     if (activePanel === "gps" && latest) requestAnimationFrame(() => drawChart(latest));
   }
 
-  function mapPoint(longitude, latitude, width, height) {
+  function mapPoint(longitude, latitude, width, height, data) {
     const padding = 13;
-    const mapWidth = mapBounds.maxLongitude - mapBounds.minLongitude;
-    const mapHeight = mapBounds.maxLatitude - mapBounds.minLatitude;
-    const scale = Math.min((width - padding * 2) / mapWidth, (height - padding * 2) / mapHeight);
-    const contentWidth = mapWidth * scale;
-    const contentHeight = mapHeight * scale;
-    const offsetX = (width - contentWidth) * 0.5;
-    const offsetY = (height - contentHeight) * 0.5;
+    const pixelsPerKilometer = (height - padding * 2) / (chartRangeKilometers * 2);
+    const longitudeScale = kilometersPerLongitudeDegreeAtEquator
+      * Math.cos(data.latitude * Math.PI / 180);
     return {
-      x: offsetX + (longitude - mapBounds.minLongitude) * scale,
-      y: offsetY + (mapBounds.maxLatitude - latitude) * scale,
-      scale,
+      x: width * 0.5 + (longitude - data.longitude) * longitudeScale * pixelsPerKilometer,
+      y: height * 0.5
+        - (latitude - data.latitude) * kilometersPerLatitudeDegree * pixelsPerKilometer,
+      scale: pixelsPerKilometer,
     };
   }
 
   function drawGrid(width, height) {
     context.strokeStyle = "rgba(145, 205, 216, 0.16)";
     context.lineWidth = 1;
-    for (let longitude = 120; longitude <= 122; longitude += 1) {
-      const top = mapPoint(longitude, mapBounds.maxLatitude, width, height);
-      const bottom = mapPoint(longitude, mapBounds.minLatitude, width, height);
+    for (let division = 1; division < 4; division += 1) {
+      const x = width * division / 4;
       context.beginPath();
-      context.moveTo(top.x, top.y);
-      context.lineTo(bottom.x, bottom.y);
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
       context.stroke();
-    }
-    for (let latitude = 22; latitude <= 25; latitude += 1) {
-      const left = mapPoint(mapBounds.minLongitude, latitude, width, height);
-      const right = mapPoint(mapBounds.maxLongitude, latitude, width, height);
+      const y = height * division / 4;
       context.beginPath();
-      context.moveTo(left.x, left.y);
-      context.lineTo(right.x, right.y);
+      context.moveTo(0, y);
+      context.lineTo(width, y);
       context.stroke();
     }
   }
 
-  function drawLand(coordinates, width, height) {
+  function drawLand(coordinates, width, height, data) {
     context.beginPath();
     coordinates.forEach(([longitude, latitude], index) => {
-      const point = mapPoint(longitude, latitude, width, height);
+      const point = mapPoint(longitude, latitude, width, height, data);
       if (index === 0) context.moveTo(point.x, point.y);
       else context.lineTo(point.x, point.y);
     });
@@ -104,7 +95,7 @@ export function createInstrumentPanels() {
   }
 
   function drawVessel(data, width, height) {
-    const point = mapPoint(data.longitude, data.latitude, width, height);
+    const point = mapPoint(data.longitude, data.latitude, width, height, data);
     const heading = data.heading * Math.PI / 180;
     const lineLength = 24;
     context.strokeStyle = "rgba(255, 190, 60, 0.76)";
@@ -145,8 +136,8 @@ export function createInstrumentPanels() {
     context.fillStyle = "#073949";
     context.fillRect(0, 0, width, height);
     drawGrid(width, height);
-    drawLand(TAIWAN_MAIN, width, height);
-    drawLand(PENGHU_MAIN, width, height);
+    drawLand(TAIWAN_MAIN, width, height, data);
+    drawLand(PENGHU_MAIN, width, height, data);
     drawVessel(data, width, height);
   }
 
@@ -174,6 +165,17 @@ export function createInstrumentPanels() {
   triggers.forEach((trigger) => {
     trigger.addEventListener("click", () => setPanel(trigger.dataset.panelTrigger));
   });
+  rangeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      chartRangeKilometers = Number(button.dataset.chartRange);
+      rangeButtons.forEach((candidate) => {
+        const selected = candidate === button;
+        candidate.classList.toggle("selected", selected);
+        candidate.setAttribute("aria-pressed", String(selected));
+      });
+      if (latest) drawChart(latest);
+    });
+  });
   document.querySelectorAll("[data-panel-close]").forEach((button) => {
     button.addEventListener("click", () => setPanel(activePanel));
   });
@@ -187,5 +189,6 @@ export function createInstrumentPanels() {
   return {
     update,
     get activePanel() { return activePanel; },
+    get chartRangeKilometers() { return chartRangeKilometers; },
   };
 }
