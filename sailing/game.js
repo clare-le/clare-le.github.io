@@ -48,6 +48,11 @@ const knotsToMetersPerSecond = 0.514444;
 const propulsionResponseScale = 24;
 const bearings = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
 const spawnCoordinates = KAOHSIUNG_SPAWN;
+const engineCharacteristics = {
+  classic: { baseTemperature: 75, temperatureRise: 0.2, oilPressureRise: 3.25 },
+  cargo: { baseTemperature: 71, temperatureRise: 0.18, oilPressureRise: 2.9 },
+  yacht: { baseTemperature: 70, temperatureRise: 0.17, oilPressureRise: 3.5 },
+};
 
 const telemetry = {
   speed: 0,
@@ -320,7 +325,7 @@ const state = {
   grounded: false,
   anchorDeployed: false,
   fuelFraction: 1,
-  engineTemperature: vessel.configuration.model === "cargo" ? 72 : 76,
+  engineTemperature: engineCharacteristics[vessel.configuration.model]?.baseTemperature ?? 74,
   time: 0,
   lastTelemetry: 0,
 };
@@ -454,6 +459,7 @@ function update(dt) {
     : state.shoreDistance < 150 ? "shallow" : "clear";
   state.acceleration = clamp((state.speed - previousSpeed) / dt, -12, 12);
 
+  const currentRpm = instrumentRpm(physics, state.throttleLevel, state.speed);
   vessel.update(dt, {
     rudder: state.rudder,
     throttle: state.throttleLevel < 0
@@ -463,6 +469,7 @@ function update(dt) {
     anchor: state.anchorDeployed,
     speed: state.speed,
     speedRatio: clamp(Math.abs(state.speed) / physics.maxSpeedKnots, 0, 1),
+    rpm: currentRpm,
     heading: state.heading,
     time: state.time,
   });
@@ -527,12 +534,14 @@ function update(dt) {
   telemetry.fuelLiters = Number(
     (state.fuelFraction * physics.fuelCapacityLiters).toFixed(1),
   );
-  telemetry.rpm = instrumentRpm(physics, state.throttleLevel, state.speed);
+  telemetry.rpm = currentRpm;
   const rpmRange = Math.max(1, physics.maxRpm - physics.idleRpm);
   const rpmRatio = clamp((telemetry.rpm - physics.idleRpm) / rpmRange, 0, 1);
   const engineLoadPercent = fuelLoad * 100;
-  const temperatureTarget = (vessel.configuration.model === "cargo" ? 71 : 75)
-    + engineLoadPercent * (vessel.configuration.model === "cargo" ? 0.18 : 0.2);
+  const engineProfile = engineCharacteristics[vessel.configuration.model]
+    || engineCharacteristics.classic;
+  const temperatureTarget = engineProfile.baseTemperature
+    + engineLoadPercent * engineProfile.temperatureRise;
   state.engineTemperature = THREE.MathUtils.damp(
     state.engineTemperature,
     temperatureTarget,
@@ -543,8 +552,7 @@ function update(dt) {
     rpm: telemetry.rpm,
     loadPercent: Number(engineLoadPercent.toFixed(1)),
     temperatureCelsius: Number(state.engineTemperature.toFixed(1)),
-    oilPressureBar: Number((1.55 + rpmRatio
-      * (vessel.configuration.model === "cargo" ? 2.9 : 3.25)).toFixed(2)),
+    oilPressureBar: Number((1.55 + rpmRatio * engineProfile.oilPressureRise).toFixed(2)),
     voltage: Number((13.9 - engineLoadPercent * 0.002).toFixed(2)),
     fuelFlowLitersPerHour: Number(
       (physics.fullLoadFuelLitersPerHour * fuelLoad).toFixed(2),

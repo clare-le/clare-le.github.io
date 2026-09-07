@@ -1,4 +1,4 @@
-// Keep both finished models available for side-by-side testing.
+// Keep every finished model available for side-by-side testing.
 export const boatPresets = {
   classic: {
     model: "classic",
@@ -12,9 +12,10 @@ export const boatPresets = {
     colors: {},
   },
   cargo: { model: "cargo", colors: {} },
+  yacht: { model: "yacht", colors: {} },
 };
 
-export const boatConfiguration = boatPresets.cargo;
+export const boatConfiguration = boatPresets.yacht;
 
 export function selectBoatConfiguration(search = "") {
   const id = new URLSearchParams(search).get("boat");

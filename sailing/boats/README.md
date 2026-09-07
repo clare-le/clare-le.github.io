@@ -1,8 +1,9 @@
 # Modular Boats
 
 `config.js` selects the boat loaded by the game. The default is currently the
-small cargo boat; the original classic runabout remains available.
+high-speed luxury yacht; the original classic runabout and cargo boat remain available.
 
+- High-speed luxury yacht: `/sailing/?boat=yacht`
 - Small cargo boat: `/sailing/?boat=cargo`
 - Classic runabout: `/sailing/?boat=classic`
 
@@ -25,7 +26,7 @@ export const boatConfiguration = {
 ```
 
 Omitted parts use their defaults. Unknown models, part names, or material names
-throw an error. There are currently two finished models: `classic` and `cargo`.
+throw an error. There are currently three finished models: `classic`, `cargo`, and `yacht`.
 The classic model supports the interchangeable parts shown above. Cargo currently
 uses its matched workboat hull, wheelhouse, and helm assembly.
 
@@ -42,6 +43,10 @@ uses its matched workboat hull, wheelhouse, and helm assembly.
 - `cargo/hull.js`: workboat hull, connected cabin shell, windows, and cargo hatch.
 - `cargo/helm.js`: starboard helm station, radar, warning lamps, working engine gauges,
   wheel, throttle, and anchor levers.
+- `yacht/hull.js`: 15.8-metre planing hull, teak deck, wraparound glass, cockpit shell,
+  sun pad, rails, and yacht performance profile.
+- `yacht/helm.js`: wide luxury fascia, dual navigation/engine displays, helm seats,
+  wheel, twin-engine throttles, and anchor lever.
 - `three.js`: shared Three.js version for the game and every model module.
 - `tests.js`: browser-side contract and replacement tests.
 
@@ -67,13 +72,13 @@ guarantee that arbitrary shapes will fit without gaps or intersections.
 Animation input is read-only and contains:
 
 ```js
-{ rudder, throttle, gear, anchor, speed, speedRatio, heading, time }
+{ rudder, throttle, gear, anchor, speed, speedRatio, rpm, heading, time }
 ```
 
 `rudder` is -1 to 1; throttle is -1 in reverse and 0 to 1 from neutral through
 forward; gear is -1, 0, or 1; anchor is a boolean; speed is signed knots;
 speedRatio is the absolute speed divided by forward maximum speed. Heading is
-clockwise radians; time and dt are seconds.
+clockwise radians; rpm is the current instrument RPM; time and dt are seconds.
 On replacement, `update(0, lastInput)` initializes the new model to current
 controls immediately. Parts must support this zero-duration initialization.
 
@@ -120,6 +125,7 @@ not manufacturer specifications:
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Classic runabout | 4.1 m | 1.36 m | 820 kg | 74.6 kW / 100 hp | 750-5,200 | 95 L | 24 kn | 4.5 kn |
 | Small cargo boat | 7.1 m | 2.30 m | 4,800 kg | 110 kW / 148 hp | 650-2,800 | 360 L | 10.5 kn | 3.5 kn |
+| High-speed luxury yacht | 15.8 m | 4.10 m | 18,500 kg | 2,684 kW / 3,600 hp | 650-3,600 | 1,800 L | 70 kn | 10 kn |
 
 The shared control has one reverse detent below neutral: `R, 0, 1, 2, 3, 4, 5`.
 A direction change first applies active braking to zero, then builds speed in the

@@ -1,8 +1,13 @@
 import * as THREE from "./three.js";
 import { createClassicBoat } from "./classic/index.js";
 import { createCargoBoat } from "./cargo/index.js";
+import { createYachtBoat } from "./yacht/index.js";
 
-export const boatModels = { classic: createClassicBoat, cargo: createCargoBoat };
+export const boatModels = {
+  classic: createClassicBoat,
+  cargo: createCargoBoat,
+  yacht: createYachtBoat,
+};
 
 function validateModel(model) {
   if (!model?.root?.isObject3D || typeof model.update !== "function"

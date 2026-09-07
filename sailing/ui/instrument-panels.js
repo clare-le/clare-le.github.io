@@ -148,7 +148,12 @@ export function createInstrumentPanels() {
     fields.gpsScale.textContent = data.navigationMultiplier < 1.05
       ? "近岸 ×1"
       : `巡航 ×${data.navigationMultiplier.toFixed(1)}`;
-    fields.engineModel.textContent = data.model === "cargo" ? "小貨船柴油機" : "小艇汽油機";
+    const engineNames = {
+      classic: "小艇汽油機",
+      cargo: "小貨船柴油機",
+      yacht: "豪華遊艇雙柴油機",
+    };
+    fields.engineModel.textContent = engineNames[data.model] || "船舶引擎";
     fields.rpm.textContent = data.engine.rpm.toLocaleString("en-US");
     fields.condition.textContent = data.engine.condition;
     fields.condition.classList.toggle("warning", data.engine.condition !== "正常");

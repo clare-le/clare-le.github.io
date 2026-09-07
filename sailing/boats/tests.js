@@ -108,6 +108,19 @@ export function runBoatModuleTests() {
     "Each boat model must supply its reverse performance");
   cargoSlot.update(0, input);
   cargoSlot.dispose();
+  const yachtSlot = createBoatSlot(boatPresets.yacht);
+  assert(yachtSlot.configuration.model === "yacht", "Yacht preset must load the yacht model");
+  assert(yachtSlot.root.getObjectByName("yacht-hull"), "Yacht model must contain its hull");
+  assert(yachtSlot.root.getObjectByName("yacht-wheel"), "Yacht model must contain its animated helm");
+  assert(yachtSlot.profile.physics.maxSpeedKnots === 70,
+    "Yacht model must reach its 70 knot development speed");
+  assert(yachtSlot.profile.physics.lengthMeters === 15.8
+      && yachtSlot.profile.physics.massKg === 18500,
+    "Yacht collision and acceleration must use its full-scale dimensions");
+  assert(yachtSlot.profile.physics.enginePowerKw === 2684,
+    "Yacht must use the twin-engine power profile");
+  yachtSlot.update(0, input);
+  yachtSlot.dispose();
   return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,
-    models: ["classic", "cargo"] };
+    models: ["classic", "cargo", "yacht"] };
 }
