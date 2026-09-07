@@ -18,3 +18,15 @@ The coastline polygons are shared by rendering, nearest-shore distance, shallow
 water resistance, and hull collision. Do not derive coordinates directly from
 the compressed scene scale; use `projectCoordinates` and
 `coordinatesFromWorld`.
+
+## Reusable port models
+
+`port-assets.js` owns the reusable geometry and material library for concrete
+quays, container yards, port buildings, warehouses, and ship-to-shore gantry
+cranes. Container yards use instanced meshes so a large stack remains cheap to
+draw on mobile hardware.
+
+`kaohsiung-port.js` is only a WGS84 layout. It places instances of those shared
+models at the Qijin and Qianzhen container terminals. Add another port by
+creating a separate layout module and passing `projectCoordinates` into its
+factory; do not duplicate the model-building code.

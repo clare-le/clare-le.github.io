@@ -1,5 +1,6 @@
 import * as THREE from "../boats/three.js";
 import { PENGHU_MAIN, TAIWAN_MAIN } from "./coast-data.js";
+import { createKaohsiungPort } from "./kaohsiung-port.js";
 
 export const MAP_COMPRESSION = 10;
 export const KAOHSIUNG_SPAWN = Object.freeze({
@@ -167,6 +168,8 @@ export function createCoastalWorld() {
     return { ...land, ring };
   });
   addHarborBuoys(root);
+  const kaohsiungPort = createKaohsiungPort(projectCoordinates);
+  root.add(kaohsiungPort.root);
 
   function closestShore(x, z) {
     let closest = null;
@@ -200,6 +203,7 @@ export function createCoastalWorld() {
     closestShore,
     coordinatesFromWorld,
     navigationMultiplier,
+    ports: kaohsiungPort.facilities,
     mapCompression: MAP_COMPRESSION,
     spawn: KAOHSIUNG_SPAWN,
   };

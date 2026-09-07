@@ -828,6 +828,7 @@ window.render_game_to_text = () =>
         mapCompression: coastalWorld.mapCompression,
         navigationMultiplier: Number(state.navigationMultiplier.toFixed(2)),
         landMasses: coastalWorld.rings.map(({ id, name }) => ({ id, name })),
+        ports: coastalWorld.ports,
         spawn: coastalWorld.spawn,
       },
     },
