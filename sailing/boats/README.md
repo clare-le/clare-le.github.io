@@ -72,13 +72,16 @@ guarantee that arbitrary shapes will fit without gaps or intersections.
 Animation input is read-only and contains:
 
 ```js
-{ rudder, throttle, gear, anchor, speed, speedRatio, rpm, heading, time }
+{ rudder, throttle, gear, anchor, speed, speedRatio, rpm,
+  latitude, longitude, navigationMultiplier, heading, time }
 ```
 
 `rudder` is -1 to 1; throttle is -1 in reverse and 0 to 1 from neutral through
 forward; gear is -1, 0, or 1; anchor is a boolean; speed is signed knots;
 speedRatio is the absolute speed divided by forward maximum speed. Heading is
-clockwise radians; rpm is the current instrument RPM; time and dt are seconds.
+clockwise radians; rpm is the current instrument RPM; latitude and longitude are
+live WGS84 coordinates; navigationMultiplier is the current travel scale; time
+and dt are seconds.
 On replacement, `update(0, lastInput)` initializes the new model to current
 controls immediately. Parts must support this zero-duration initialization.
 

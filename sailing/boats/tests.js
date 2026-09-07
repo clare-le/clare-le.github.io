@@ -12,7 +12,9 @@ export function runBoatModuleTests() {
   const boatConfiguration = boatPresets.classic;
   const slot = createBoatSlot(boatConfiguration);
   const input = { rudder: 0.7, throttle: 0.6, gear: 1,
-    speed: 4.5, speedRatio: 4.5 / 24, heading: 1, time: 2 };
+    speed: 4.5, speedRatio: 4.5 / 24, rpm: 2200,
+    latitude: 22.605, longitude: 120.287, navigationMultiplier: 1,
+    heading: 1, time: 2 };
   const root = slot.root;
   root.position.set(10, 0.3, -20);
   root.rotation.y = 0.4;
@@ -120,6 +122,12 @@ export function runBoatModuleTests() {
   assert(yachtSlot.profile.physics.enginePowerKw === 2684,
     "Yacht must use the twin-engine power profile");
   yachtSlot.update(0, input);
+  const yachtNavigation = yachtSlot.root.getObjectByName("yacht-nav-screen")
+    ?.userData.navigation;
+  assert(yachtNavigation?.latitude === input.latitude
+      && yachtNavigation.longitude === input.longitude
+      && yachtNavigation.heading === input.heading,
+    "Yacht navigation screen must receive live geography and heading");
   yachtSlot.dispose();
   return { passed: true, checkedResources: resources.size, repeatedSwaps: 8,
     models: ["classic", "cargo", "yacht"] };

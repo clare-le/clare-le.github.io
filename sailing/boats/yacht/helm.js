@@ -1,5 +1,27 @@
 import * as THREE from "../three.js";
 import { box, strut } from "../cargo/geometry.js";
+import { PENGHU_MAIN, TAIWAN_MAIN } from "../../world/coast-data.js";
+
+const kilometersPerLatitudeDegree = 110.574;
+const kilometersPerLongitudeDegreeAtEquator = 111.32;
+const navigationRangeKilometers = 20;
+
+function drawDisplayGrid(context) {
+  context.strokeStyle = "rgba(80, 215, 229, 0.28)";
+  context.lineWidth = 2;
+  for (let x = 24; x < context.canvas.width; x += 48) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, context.canvas.height);
+    context.stroke();
+  }
+  for (let y = 24; y < context.canvas.height; y += 48) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(context.canvas.width, y);
+    context.stroke();
+  }
+}
 
 function displayTexture(mode) {
   const canvas = document.createElement("canvas");
@@ -8,37 +30,14 @@ function displayTexture(mode) {
   const context = canvas.getContext("2d");
   context.fillStyle = "#071b23";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = "rgba(80, 215, 229, 0.28)";
-  context.lineWidth = 2;
-  for (let x = 24; x < canvas.width; x += 48) {
-    context.beginPath();
-    context.moveTo(x, 0);
-    context.lineTo(x, canvas.height);
-    context.stroke();
-  }
-  for (let y = 24; y < canvas.height; y += 48) {
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(canvas.width, y);
-    context.stroke();
-  }
+  drawDisplayGrid(context);
   context.fillStyle = "#d9fbff";
   context.font = "bold 26px sans-serif";
   context.fillText(mode === "nav" ? "NAV" : "VESSEL", 22, 38);
   if (mode === "nav") {
-    context.strokeStyle = "#52e2ef";
-    context.lineWidth = 5;
-    context.beginPath();
-    context.moveTo(38, 194);
-    context.bezierCurveTo(110, 168, 144, 76, 330, 54);
-    context.stroke();
-    context.fillStyle = "#ffd166";
-    context.beginPath();
-    context.moveTo(175, 132);
-    context.lineTo(153, 184);
-    context.lineTo(197, 168);
-    context.closePath();
-    context.fill();
+    context.fillStyle = "#7aa7ad";
+    context.font = "18px sans-serif";
+    context.fillText("GPS ACQUIRING", 116, 134);
   } else {
     for (const [x, label, value] of [[74, "PORT", "650"], [252, "STBD", "650"]]) {
       context.strokeStyle = "#55e0b0";
@@ -56,6 +55,85 @@ function displayTexture(mode) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return { texture, context };
+}
+
+function updateNavigationDisplay(display, input) {
+  const { context, texture, mesh } = display;
+  const { width, height } = context.canvas;
+  const centerX = width * 0.5;
+  const centerY = height * 0.53;
+  const pixelsPerKilometer = (height - 34) / (navigationRangeKilometers * 2);
+  const longitudeScale = kilometersPerLongitudeDegreeAtEquator
+    * Math.cos(input.latitude * Math.PI / 180);
+  const mapPoint = ([longitude, latitude]) => [
+    centerX + (longitude - input.longitude) * longitudeScale * pixelsPerKilometer,
+    centerY - (latitude - input.latitude) * kilometersPerLatitudeDegree
+      * pixelsPerKilometer,
+  ];
+
+  context.fillStyle = "#071b23";
+  context.fillRect(0, 0, width, height);
+  drawDisplayGrid(context);
+  for (const coast of [TAIWAN_MAIN, PENGHU_MAIN]) {
+    context.beginPath();
+    coast.forEach((coordinate, index) => {
+      const [x, y] = mapPoint(coordinate);
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.closePath();
+    context.fillStyle = "#315d4f";
+    context.strokeStyle = "#d5c77d";
+    context.lineWidth = 3;
+    context.fill();
+    context.stroke();
+  }
+
+  context.save();
+  context.translate(centerX, centerY);
+  context.rotate(input.heading);
+  context.strokeStyle = "rgba(255, 193, 72, 0.72)";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(0, 5);
+  context.lineTo(0, -36);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(0, -14);
+  context.lineTo(11, 12);
+  context.lineTo(0, 7);
+  context.lineTo(-11, 12);
+  context.closePath();
+  context.fillStyle = "#fff5d4";
+  context.strokeStyle = "#f2a900";
+  context.lineWidth = 3;
+  context.fill();
+  context.stroke();
+  context.restore();
+
+  context.fillStyle = "rgba(7, 27, 35, 0.82)";
+  context.fillRect(0, 0, width, 42);
+  context.fillRect(0, height - 29, width, 29);
+  context.fillStyle = "#d9fbff";
+  context.font = "bold 23px sans-serif";
+  context.textAlign = "left";
+  context.fillText(`NAV  ${navigationRangeKilometers} KM`, 18, 29);
+  context.textAlign = "right";
+  context.fillText(`${Math.round(Math.abs(input.speed))} kn`, width - 18, 29);
+  context.font = "16px sans-serif";
+  context.textAlign = "center";
+  context.fillText(
+    `${input.latitude.toFixed(3)}N  ${input.longitude.toFixed(3)}E`,
+    centerX,
+    height - 9,
+  );
+  context.textAlign = "start";
+  texture.needsUpdate = true;
+  mesh.userData.navigation = {
+    latitude: input.latitude,
+    longitude: input.longitude,
+    heading: input.heading,
+  };
 }
 
 function updateEngineDisplay(display, rpm) {
@@ -95,12 +173,14 @@ export function createYachtHelm(materials) {
       new THREE.MeshBasicMaterial({ map: displaySurface.texture }),
     );
     display.position.set(x, 0.99, 0.051);
+    display.name = mode === "nav" ? "yacht-nav-screen" : "yacht-engine-screen";
     root.add(display);
-    return displaySurface;
+    return { ...displaySurface, mesh: display };
   }
-  screenPanel(-0.37, "nav");
+  const navigationDisplay = screenPanel(-0.37, "nav");
   const engineDisplay = screenPanel(0.37, "engine");
   let displayedRpm = 650;
+  let lastNavigationUpdate = -Infinity;
 
   const statusLights = [0x55e0b0, 0x55e0b0, 0x69b7ff, 0xffd166].map((color, index) => {
     const material = new THREE.MeshStandardMaterial({
@@ -181,6 +261,12 @@ export function createYachtHelm(materials) {
       if (nextRpm !== displayedRpm) {
         displayedRpm = nextRpm;
         updateEngineDisplay(engineDisplay, displayedRpm);
+      }
+      const hasNavigation = Number.isFinite(input.latitude)
+        && Number.isFinite(input.longitude) && Number.isFinite(input.heading);
+      if (hasNavigation && (dt === 0 || input.time - lastNavigationUpdate >= 0.2)) {
+        lastNavigationUpdate = input.time;
+        updateNavigationDisplay(navigationDisplay, input);
       }
     },
   };

@@ -459,6 +459,7 @@ function update(dt) {
     : state.shoreDistance < 150 ? "shallow" : "clear";
   state.acceleration = clamp((state.speed - previousSpeed) / dt, -12, 12);
 
+  const coordinates = coastalWorld.coordinatesFromWorld(state.x, state.z);
   const currentRpm = instrumentRpm(physics, state.throttleLevel, state.speed);
   vessel.update(dt, {
     rudder: state.rudder,
@@ -470,6 +471,9 @@ function update(dt) {
     speed: state.speed,
     speedRatio: clamp(Math.abs(state.speed) / physics.maxSpeedKnots, 0, 1),
     rpm: currentRpm,
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
+    navigationMultiplier: state.navigationMultiplier,
     heading: state.heading,
     time: state.time,
   });
@@ -559,7 +563,6 @@ function update(dt) {
     ),
     condition: state.engineTemperature > 98 || state.fuelFraction < 0.08 ? "注意" : "正常",
   };
-  const coordinates = coastalWorld.coordinatesFromWorld(state.x, state.z);
   telemetry.latitude = Number(coordinates.latitude.toFixed(5));
   telemetry.longitude = Number(coordinates.longitude.toFixed(5));
   telemetry.navigationMultiplier = Number(state.navigationMultiplier.toFixed(2));
