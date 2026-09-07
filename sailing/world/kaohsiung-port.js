@@ -8,7 +8,7 @@ export const KAOHSIUNG_PORT_LAYOUT = Object.freeze([
     longitude: 120.278,
     latitude: 22.6155,
     rotationDegrees: -38,
-    quay: { width: 74, depth: 25 },
+    quay: { width: 74, depth: 68 },
     cranes: [-24, 0, 24],
     yards: [
       { x: -18, z: 13, columns: 6, rows: 3, tiers: 5, seed: 1 },
@@ -25,7 +25,7 @@ export const KAOHSIUNG_PORT_LAYOUT = Object.freeze([
     longitude: 120.2915,
     latitude: 22.6085,
     rotationDegrees: 42,
-    quay: { width: 58, depth: 22 },
+    quay: { width: 58, depth: 68 },
     cranes: [-15, 15],
     yards: [
       { x: 0, z: 13, columns: 7, rows: 3, tiers: 5, seed: 6 },
@@ -41,9 +41,11 @@ function createTerminal(library, layout, projectCoordinates) {
   const root = new THREE.Group();
   root.name = layout.id;
   const projected = projectCoordinates(layout.longitude, layout.latitude);
-  root.position.set(projected.x, 1.46, projected.z);
+  root.position.set(projected.x, 0, projected.z);
   root.rotation.y = THREE.MathUtils.degToRad(layout.rotationDegrees);
-  root.add(library.createQuay(layout.quay));
+  const quay = library.createQuay(layout.quay);
+  const surfaceY = quay.userData.surfaceY;
+  root.add(quay);
 
   layout.cranes.forEach((x, index) => {
     const crane = library.createGantryCrane({
@@ -53,35 +55,61 @@ function createTerminal(library, layout, projectCoordinates) {
       boom: 20,
     });
     crane.name = `${layout.id}-gantry-${index + 1}`;
-    crane.position.set(x, 0.66, -layout.quay.depth * 0.27);
+    crane.position.set(x, surfaceY, -layout.quay.depth / 2 + 4.5);
     root.add(crane);
   });
   layout.yards.forEach((yard, index) => {
     const containers = library.createContainerYard(yard);
     containers.name = `${layout.id}-containers-${index + 1}`;
-    containers.position.set(yard.x, 0.66, yard.z);
+    containers.position.set(yard.x, surfaceY, yard.z);
     root.add(containers);
   });
   layout.buildings.forEach((building, index) => {
     const structure = library.createPortBuilding(building);
     structure.name = `${layout.id}-building-${index + 1}`;
-    structure.position.set(building.x, 0.66, building.z);
+    structure.position.set(building.x, surfaceY, building.z);
     root.add(structure);
   });
   return root;
 }
 
+function terminalCollisionRing(terminal, layout) {
+  const halfWidth = layout.quay.width / 2;
+  const halfDepth = layout.quay.depth / 2;
+  terminal.updateMatrixWorld(true);
+  const corners = [
+    [-halfWidth, -halfDepth],
+    [halfWidth, -halfDepth],
+    [halfWidth, halfDepth],
+    [-halfWidth, halfDepth],
+    [-halfWidth, -halfDepth],
+  ];
+  return {
+    id: `${layout.id}-apron`,
+    name: `${layout.name}碼頭陸地`,
+    ring: corners.map(([x, z]) => {
+      const point = new THREE.Vector3(x, 0, z).applyMatrix4(terminal.matrixWorld);
+      return { x: point.x, z: point.z };
+    }),
+  };
+}
+
 export function createKaohsiungPort(projectCoordinates, assetLibrary = createPortAssetLibrary()) {
   const root = new THREE.Group();
   root.name = "kaohsiung-port";
-  KAOHSIUNG_PORT_LAYOUT.forEach((layout) => {
-    root.add(createTerminal(assetLibrary, layout, projectCoordinates));
+  const terminals = KAOHSIUNG_PORT_LAYOUT.map((layout) => {
+    const terminal = createTerminal(assetLibrary, layout, projectCoordinates);
+    root.add(terminal);
+    return terminal;
   });
   return {
     root,
     facilities: KAOHSIUNG_PORT_LAYOUT.map(({ id, name, longitude, latitude }) => ({
       id, name, longitude, latitude,
     })),
+    collisionRings: terminals.map((terminal, index) => (
+      terminalCollisionRing(terminal, KAOHSIUNG_PORT_LAYOUT[index])
+    )),
     assetLibrary,
   };
 }

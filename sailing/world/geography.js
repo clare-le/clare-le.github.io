@@ -170,10 +170,11 @@ export function createCoastalWorld() {
   addHarborBuoys(root);
   const kaohsiungPort = createKaohsiungPort(projectCoordinates);
   root.add(kaohsiungPort.root);
+  const collisionRings = [...rings, ...kaohsiungPort.collisionRings];
 
   function closestShore(x, z) {
     let closest = null;
-    for (const land of rings) {
+    for (const land of collisionRings) {
       const inside = pointInRing(x, z, land.ring);
       for (let i = 0; i < land.ring.length - 1; i += 1) {
         const candidate = nearestPointOnSegment(x, z, land.ring[i], land.ring[i + 1]);
@@ -204,6 +205,7 @@ export function createCoastalWorld() {
     coordinatesFromWorld,
     navigationMultiplier,
     ports: kaohsiungPort.facilities,
+    portCollisionRings: kaohsiungPort.collisionRings,
     mapCompression: MAP_COMPRESSION,
     spawn: KAOHSIUNG_SPAWN,
   };

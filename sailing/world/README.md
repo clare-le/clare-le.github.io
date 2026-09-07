@@ -30,3 +30,10 @@ draw on mobile hardware.
 models at the Qijin and Qianzhen container terminals. Add another port by
 creating a separate layout module and passing `projectCoordinates` into its
 factory; do not duplicate the model-building code.
+
+Each terminal includes a full-depth reclaimed concrete apron that rises from
+below sea level to the same height as the coastal land. Buildings and container
+yards must fit entirely inside that footprint. Gantry crane legs remain on the
+apron while only their loading booms project over the water.
+The apron rectangles also participate in the shared shoreline collision query,
+so a vessel cannot pass through the reclaimed terminal land.

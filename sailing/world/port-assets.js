@@ -9,7 +9,8 @@ export function createPortAssetLibrary() {
   const unitCylinder = new THREE.CylinderGeometry(1, 1, 1, 10);
   const containerGeometry = new THREE.BoxGeometry(2.44, 2.59, 6.06);
   const materials = {
-    concrete: paint(0x778183, { roughness: 0.94 }),
+    concrete: paint(0x879294, { roughness: 0.94 }),
+    concreteSide: paint(0x505d60, { roughness: 0.98 }),
     concreteEdge: paint(0xd5b949, { roughness: 0.72 }),
     building: paint(0xb7c2be, { roughness: 0.9 }),
     warehouse: paint(0x849896, { roughness: 0.88 }),
@@ -157,14 +158,23 @@ export function createPortAssetLibrary() {
     return root;
   }
 
-  function createQuay({ width = 70, depth = 24 } = {}) {
+  function createQuay({ width = 70, depth = 60, surfaceY = 1.45, draft = 0.5 } = {}) {
     const root = new THREE.Group();
     root.name = "concrete-quay";
-    box(root, materials.concrete, [width, 0.65, depth], [0, 0.32, 0]);
-    box(root, materials.concreteEdge, [width, 0.16, 0.5], [0, 0.72, -depth / 2]);
+    const foundationHeight = surfaceY + draft;
+    box(root, materials.concreteSide, [width, foundationHeight, depth],
+      [0, (surfaceY - draft) / 2, 0], "quay-foundation");
+    box(root, materials.concrete, [width, 0.12, depth],
+      [0, surfaceY + 0.06, 0], "quay-apron");
+    box(root, materials.concreteEdge, [width, 0.16, 0.5],
+      [0, surfaceY + 0.16, -depth / 2], "quay-edge");
     for (let x = -width / 2 + 4; x < width / 2; x += 9) {
-      cylinder(root, materials.craneDark, 0.34, 0.48, [x, 0.95, -depth / 2 + 1]);
+      cylinder(root, materials.craneDark, 0.34, 0.48,
+        [x, surfaceY + 0.3, -depth / 2 + 1]);
     }
+    root.userData.width = width;
+    root.userData.depth = depth;
+    root.userData.surfaceY = surfaceY + 0.12;
     return root;
   }
 
