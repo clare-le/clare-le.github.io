@@ -113,18 +113,18 @@ export function createYachtHelm(materials) {
 
   const wheel = new THREE.Group();
   wheel.name = "yacht-wheel";
-  wheel.position.set(0.22, 0.74, 0.28);
+  wheel.position.set(0.18, 0.9, 0.48);
   wheel.rotation.x = -0.18;
-  strut(root, metal, [0.22, 0.67, 0.04], [0.22, 0.74, 0.28], 0.055);
-  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.024, 14, 56), seal));
-  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.215, 0.008, 10, 48), metal));
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.052, 20), carbon);
+  strut(root, metal, [0.18, 0.69, 0.08], [0.18, 0.9, 0.48], 0.045);
+  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.215, 0.022, 14, 56), seal));
+  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.184, 0.007, 10, 48), metal));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.052, 20), carbon);
   hub.rotation.x = Math.PI / 2;
   wheel.add(hub);
   for (let i = 0; i < 3; i += 1) {
     const angle = i * Math.PI * 2 / 3;
     strut(wheel, metal, [0, 0, 0],
-      [Math.sin(angle) * 0.215, Math.cos(angle) * 0.215, 0], 0.012);
+      [Math.sin(angle) * 0.184, Math.cos(angle) * 0.184, 0], 0.011);
   }
   root.add(wheel);
 
