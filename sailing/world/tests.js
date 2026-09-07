@@ -1,6 +1,10 @@
 import * as THREE from "../boats/three.js";
 import { isPointOnMappedLand, projectCoordinates } from "./geography.js";
-import { createKaohsiungPort, KAOHSIUNG_PORT_LAYOUT } from "./kaohsiung-port.js";
+import {
+  createKaohsiungPort,
+  KAOHSIUNG_CRANE_BANKS,
+  KAOHSIUNG_PORT_LAYOUT,
+} from "./kaohsiung-port.js";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -20,8 +24,11 @@ export function runPortAssetTests() {
     if (object.name.includes("-building-")) buildings.push(object);
   });
 
-  assert(port.root.children.length === 1, "Kaohsiung should have one mapped-land terminal");
-  assert(cranes.length === 3, "Kaohsiung should reuse three gantry cranes");
+  assert(port.root.children.length === 3,
+    "Kaohsiung should have one terminal and two crane banks");
+  assert(KAOHSIUNG_CRANE_BANKS.every((bank) => bank.sites.length === 10),
+    "each harbor bank should contain ten gantry cranes");
+  assert(cranes.length === 20, "Kaohsiung should reuse twenty gantry cranes");
   assert(buildings.length === 2, "Kaohsiung should reuse two port buildings");
   assert(containerMeshes.length > 3, "container stacks should be color-batched instanced meshes");
   assert(
@@ -73,9 +80,31 @@ export function runPortAssetTests() {
         `${layout.id} crane legs should remain on the quay depth`);
     });
   });
+  KAOHSIUNG_CRANE_BANKS.forEach((bank) => {
+    const rotation = THREE.MathUtils.degToRad(bank.rotationDegrees);
+    bank.sites.forEach(([longitude, latitude]) => {
+      const center = projectCoordinates(longitude, latitude);
+      for (const x of [-8.5, 0, 8.5]) {
+        for (const z of [-3.5, 0, 3.5]) {
+          const worldX = center.x + Math.cos(rotation) * x + Math.sin(rotation) * z;
+          const worldZ = center.z - Math.sin(rotation) * x + Math.cos(rotation) * z;
+          assert(isPointOnMappedLand(worldX, worldZ),
+            `${bank.id} crane supports should remain inside mapped land`);
+        }
+      }
+    });
+    for (let index = 1; index < bank.sites.length; index += 1) {
+      const previous = projectCoordinates(...bank.sites[index - 1]);
+      const current = projectCoordinates(...bank.sites[index]);
+      assert(Math.hypot(current.x - previous.x, current.z - previous.z) >= 18,
+        `${bank.id} cranes should be visibly dispersed`);
+    }
+  });
 
   const result = {
-    terminals: port.root.children.length,
+    terminals: KAOHSIUNG_PORT_LAYOUT.length,
+    craneBanks: KAOHSIUNG_CRANE_BANKS.length,
+    sceneGroups: port.root.children.length,
     cranes: cranes.length,
     buildings: buildings.length,
     containerBatches: containerMeshes.length,
@@ -84,7 +113,7 @@ export function runPortAssetTests() {
     groundedFacilities: KAOHSIUNG_PORT_LAYOUT.reduce(
       (total, layout) => total + layout.cranes.length
         + layout.yards.length + layout.buildings.length,
-      0,
+      KAOHSIUNG_CRANE_BANKS.reduce((total, bank) => total + bank.sites.length, 0),
     ),
   };
   port.root.clear();

@@ -35,3 +35,8 @@ The terminal's paved apron sits on the existing coastal terrain rather than
 creating new land in mapped water. Automated footprint sampling verifies the
 whole apron against the authoritative land polygon. Buildings, container yards,
 and gantry-crane supports must also fit entirely inside the apron.
+
+The harbor crane banks are separate placement data. Ten cranes follow each side
+of the inner harbor, with their supports sampled against the mapped land and
+their booms facing the water. Neighboring placements retain enough distance to
+read as individual machines instead of a continuous wall.

@@ -111,7 +111,7 @@ function instrumentRpm(physics, throttleLevel, speed) {
 }
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x87bdd5, 26, 185);
+scene.fog = new THREE.Fog(0x87bdd5, 45, 340);
 
 const camera = new THREE.PerspectiveCamera(68, 1, 0.1, 360);
 const renderer = new THREE.WebGLRenderer({
