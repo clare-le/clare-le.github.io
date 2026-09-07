@@ -75,6 +75,7 @@ function updateEngineDisplay(display, rpm) {
 export function createYachtHelm(materials) {
   const root = new THREE.Group();
   root.name = "yacht-helm";
+  root.position.y = -0.12;
   const { consolePaint, carbon, metal, seal, accent, upholstery, trim, light } = materials;
 
   // Wide stitched fascia and the lower bridge tie both stations into one console.
@@ -113,9 +114,9 @@ export function createYachtHelm(materials) {
 
   const wheel = new THREE.Group();
   wheel.name = "yacht-wheel";
-  wheel.position.set(0.18, 0.9, 0.48);
+  wheel.position.set(0.18, 0.98, 0.48);
   wheel.rotation.x = -0.18;
-  strut(root, metal, [0.18, 0.69, 0.08], [0.18, 0.9, 0.48], 0.045);
+  strut(root, metal, [0.18, 0.81, 0.08], [0.18, 0.98, 0.48], 0.045);
   wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.215, 0.022, 14, 56), seal));
   wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.184, 0.007, 10, 48), metal));
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.052, 20), carbon);
@@ -161,13 +162,6 @@ export function createYachtHelm(materials) {
   anchorLever.add(anchorHit);
   root.add(anchorLever);
 
-  // Low helm seats and side bolsters remain visible when looking sideways.
-  for (const x of [-0.72, 0.72]) {
-    box(root, upholstery, [0.62, 0.16, 0.68], [x, 0.65, 1.23]);
-    const back = box(root, upholstery, [0.65, 0.7, 0.16], [x, 0.93, 1.52]);
-    back.rotation.x = -0.08;
-    box(root, trim, [0.48, 0.018, 0.12], [x, 1.16, 1.425]);
-  }
   box(root, light, [1.4, 0.02, 0.025], [0, 1.15, -0.008]);
 
   return {

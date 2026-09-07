@@ -101,6 +101,20 @@ export function createYachtHull(materials) {
       [side * 1.72, 2.08, 2.05], 0.038);
   }
 
+  // A high panoramic roof closes the cockpit while preserving the forward view.
+  const roofY = 2.43;
+  panel(root, glass, [
+    [-1.64, roofY, 0.08], [1.64, roofY, 0.08],
+    [1.72, roofY, 2.78], [-1.72, roofY, 2.78],
+  ]);
+  box(root, cabin, [3.5, 0.1, 0.16], [0, roofY + 0.02, 0.04]);
+  for (const side of [-1, 1]) {
+    strut(root, cabin, [side * 1.68, roofY, 0.06],
+      [side * 1.76, roofY, 2.78], 0.045);
+    strut(root, metal, [side * 1.88, 0.98, 1.48],
+      [side * 1.72, roofY, 1.48], 0.027);
+  }
+
   // Stainless bow rails follow the hull rather than floating beside it.
   for (const side of [-1, 1]) {
     const rail = [

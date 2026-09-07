@@ -43,10 +43,10 @@ uses its matched workboat hull, wheelhouse, and helm assembly.
 - `cargo/hull.js`: workboat hull, connected cabin shell, windows, and cargo hatch.
 - `cargo/helm.js`: starboard helm station, radar, warning lamps, working engine gauges,
   wheel, throttle, and anchor levers.
-- `yacht/hull.js`: 15.8-metre planing hull, teak deck, wraparound glass, cockpit shell,
-  sun pad, rails, and yacht performance profile.
-- `yacht/helm.js`: wide luxury fascia, dual navigation/engine displays, helm seats,
-  wheel, twin-engine throttles, and anchor lever.
+- `yacht/hull.js`: 15.8-metre planing hull, teak deck, wraparound glass, panoramic roof,
+  cockpit shell, sun pad, rails, and yacht performance profile.
+- `yacht/helm.js`: low wide luxury fascia, dual navigation/engine displays, wheel,
+  twin-engine throttles, and anchor lever.
 - `three.js`: shared Three.js version for the game and every model module.
 - `tests.js`: browser-side contract and replacement tests.
 
