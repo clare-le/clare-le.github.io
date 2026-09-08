@@ -1,11 +1,15 @@
 import * as THREE from "../boats/three.js";
-import { PENGHU_MAIN, TAIWAN_MAIN } from "./coast-data.js";
+import {
+  KAOHSIUNG_HARBOR_LAND,
+  PENGHU_MAIN,
+  TAIWAN_MAIN,
+} from "./coast-data.js";
 import { createKaohsiungPort } from "./kaohsiung-port.js";
 
 export const MAP_COMPRESSION = 10;
 export const KAOHSIUNG_SPAWN = Object.freeze({
-  latitude: 22.605,
-  longitude: 120.287,
+  latitude: 22.613,
+  longitude: 120.283,
   headingDegrees: 315,
 });
 
@@ -18,8 +22,27 @@ const nearCoastMeters = 2000;
 const openWaterMeters = 12000;
 
 const landMasses = [
-  { id: "taiwan", name: "台灣本島", coordinates: TAIWAN_MAIN },
-  { id: "penghu", name: "澎湖本島", coordinates: PENGHU_MAIN },
+  {
+    id: "taiwan",
+    name: "台灣本島",
+    coordinates: TAIWAN_MAIN,
+    elevation: 1.45,
+    color: 0x4f8156,
+  },
+  {
+    id: "kaohsiung-harbor-land",
+    name: "高雄港旗津岸",
+    coordinates: KAOHSIUNG_HARBOR_LAND,
+    elevation: 1.45,
+    color: 0x4f8156,
+  },
+  {
+    id: "penghu",
+    name: "澎湖本島",
+    coordinates: PENGHU_MAIN,
+    elevation: 0.9,
+    color: 0x66885a,
+  },
 ];
 
 export function projectCoordinates(longitude, latitude) {
@@ -81,7 +104,7 @@ function nearestPointOnSegment(x, z, a, b) {
   return { x: pointX, z: pointZ, distance: Math.hypot(x - pointX, z - pointZ) };
 }
 
-function createLandMesh(ring, index) {
+function createLandMesh(ring, land) {
   const shape = new THREE.Shape();
   ring.forEach((point, pointIndex) => {
     const method = pointIndex === 0 ? "moveTo" : "lineTo";
@@ -90,14 +113,14 @@ function createLandMesh(ring, index) {
   shape.closePath();
 
   const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: index === 0 ? 1.45 : 0.9,
+    depth: land.elevation,
     bevelEnabled: false,
     curveSegments: 1,
   });
   geometry.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geometry, [
     new THREE.MeshStandardMaterial({
-      color: index === 0 ? 0x4f8156 : 0x66885a,
+      color: land.color,
       roughness: 0.94,
       flatShading: true,
     }),
@@ -107,16 +130,16 @@ function createLandMesh(ring, index) {
       flatShading: true,
     }),
   ]);
-  mesh.name = landMasses[index].id;
+  mesh.name = land.id;
 
   const coastGeometry = new THREE.BufferGeometry().setFromPoints(
-    ring.map((point) => new THREE.Vector3(point.x, index === 0 ? 1.47 : 0.92, point.z)),
+    ring.map((point) => new THREE.Vector3(point.x, land.elevation + 0.02, point.z)),
   );
   const coast = new THREE.LineLoop(
     coastGeometry,
     new THREE.LineBasicMaterial({ color: 0xe0c57e, transparent: true, opacity: 0.88 }),
   );
-  coast.name = `${landMasses[index].id}-shoreline`;
+  coast.name = `${land.id}-shoreline`;
 
   const group = new THREE.Group();
   group.add(mesh, coast);
@@ -166,9 +189,9 @@ function addHarborBuoys(root) {
 export function createCoastalWorld() {
   const root = new THREE.Group();
   root.name = "taiwan-coastal-world";
-  const rings = landMasses.map((land, index) => {
+  const rings = landMasses.map((land) => {
     const ring = projectedRing(land.coordinates);
-    root.add(createLandMesh(ring, index));
+    root.add(createLandMesh(ring, land));
     return { ...land, ring };
   });
   addHarborBuoys(root);

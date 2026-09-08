@@ -1,6 +1,6 @@
 import * as THREE from "../three.js";
 import { box, strut } from "../cargo/geometry.js";
-import { PENGHU_MAIN, TAIWAN_MAIN } from "../../world/coast-data.js";
+import { PENGHU_MAIN, TAIWAN_LAND_RINGS } from "../../world/coast-data.js";
 
 const kilometersPerLatitudeDegree = 110.574;
 const kilometersPerLongitudeDegreeAtEquator = 111.32;
@@ -74,7 +74,7 @@ function updateNavigationDisplay(display, input) {
   context.fillStyle = "#071b23";
   context.fillRect(0, 0, width, height);
   drawDisplayGrid(context);
-  for (const coast of [TAIWAN_MAIN, PENGHU_MAIN]) {
+  for (const coast of [...TAIWAN_LAND_RINGS, PENGHU_MAIN]) {
     context.beginPath();
     coast.forEach((coordinate, index) => {
       const [x, y] = mapPoint(coordinate);
@@ -127,6 +127,9 @@ function updateNavigationDisplay(display, input) {
     centerX,
     height - 9,
   );
+  context.font = "10px sans-serif";
+  context.textAlign = "right";
+  context.fillText("© OSM", width - 8, height - 9);
   context.textAlign = "start";
   texture.needsUpdate = true;
   mesh.userData.navigation = {

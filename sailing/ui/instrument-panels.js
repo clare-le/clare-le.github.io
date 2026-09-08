@@ -1,4 +1,4 @@
-import { PENGHU_MAIN, TAIWAN_MAIN } from "../world/coast-data.js";
+import { PENGHU_MAIN, TAIWAN_LAND_RINGS } from "../world/coast-data.js";
 
 const kilometersPerLatitudeDegree = 110.574;
 const kilometersPerLongitudeDegreeAtEquator = 111.32;
@@ -136,9 +136,14 @@ export function createInstrumentPanels() {
     context.fillStyle = "#073949";
     context.fillRect(0, 0, width, height);
     drawGrid(width, height);
-    drawLand(TAIWAN_MAIN, width, height, data);
-    drawLand(PENGHU_MAIN, width, height, data);
+    [...TAIWAN_LAND_RINGS, PENGHU_MAIN]
+      .forEach((coordinates) => drawLand(coordinates, width, height, data));
     drawVessel(data, width, height);
+    context.fillStyle = "rgba(217, 251, 255, 0.68)";
+    context.font = "8px sans-serif";
+    context.textAlign = "right";
+    context.fillText("© OpenStreetMap contributors", width - 6, height - 5);
+    context.textAlign = "start";
   }
 
   function update(data) {

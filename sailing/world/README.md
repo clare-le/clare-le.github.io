@@ -1,10 +1,19 @@
 # Coastal world
 
-`coast-data.js` retains only Taiwan main island and the largest Penghu polygon
-from the geoBoundaries TWN ADM0 geometry. The rings are simplified for the
-mobile game and remain in WGS84 longitude/latitude order.
+`coast-data.js` retains the Taiwan main island and the largest Penghu polygon
+from the National Land Surveying and Mapping Center county boundary data. The
+rings are simplified for mobile rendering and remain in WGS84
+longitude/latitude order.
 
-Source: <https://www.geoboundaries.org/api/current/gbOpen/TWN/ADM0/>
+The national boundary alone fills Kaohsiung's navigable harbor basins, so the
+Kaohsiung tile is cut out and replaced with detailed OpenStreetMap coastline
+geometry. This produces one mainland ring plus a separate Qijin/harbor-land
+ring without creating artificial land across the channel.
+
+Sources:
+
+- NLSC county boundary download: <https://maps.nlsc.gov.tw/pro/download.jsp>
+- OpenStreetMap coastline and license: <https://www.openstreetmap.org/copyright>
 
 `geography.js` projects those coordinates around the Kaohsiung Harbor spawn.
 Geographic distances are rendered at 1:10 scale, while the WGS84 coordinates
@@ -27,9 +36,9 @@ cranes. Container yards use instanced meshes so a large stack remains cheap to
 draw on mobile hardware.
 
 `kaohsiung-port.js` is only a WGS84 layout. It places instances of those shared
-models inside the land polygon shown by the simplified Kaohsiung map. Add another port by
-creating a separate layout module and passing `projectCoordinates` into its
-factory; do not duplicate the model-building code.
+models inside the detailed harbor land polygons. Add another port by creating a
+separate layout module and passing `projectCoordinates` into its factory; do not
+duplicate the model-building code.
 
 The terminal's paved apron sits on the existing coastal terrain rather than
 creating new land in mapped water. Automated footprint sampling verifies the

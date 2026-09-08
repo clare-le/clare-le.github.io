@@ -1,5 +1,14 @@
 import * as THREE from "../boats/three.js";
-import { isPointOnMappedLand, projectCoordinates } from "./geography.js";
+import {
+  KAOHSIUNG_HARBOR_LAND,
+  PENGHU_MAIN,
+  TAIWAN_MAIN,
+} from "./coast-data.js";
+import {
+  isPointOnMappedLand,
+  KAOHSIUNG_SPAWN,
+  projectCoordinates,
+} from "./geography.js";
 import {
   createKaohsiungPort,
   KAOHSIUNG_CRANE_BANKS,
@@ -11,6 +20,13 @@ function assert(condition, message) {
 }
 
 export function runPortAssetTests() {
+  assert(TAIWAN_MAIN.length >= 2000, "Taiwan should retain the detailed national outline");
+  assert(KAOHSIUNG_HARBOR_LAND.length >= 500,
+    "Kaohsiung should retain the detailed harbor coastline");
+  assert(PENGHU_MAIN.length >= 400, "Penghu should retain its detailed outline");
+  const spawn = projectCoordinates(KAOHSIUNG_SPAWN.longitude, KAOHSIUNG_SPAWN.latitude);
+  assert(!isPointOnMappedLand(spawn.x, spawn.z),
+    "Kaohsiung spawn should remain in navigable harbor water");
   const port = createKaohsiungPort(projectCoordinates);
   const containerMeshes = [];
   const cranes = [];
@@ -110,6 +126,7 @@ export function runPortAssetTests() {
     containerBatches: containerMeshes.length,
     containerInstances: containerMeshes.reduce((total, mesh) => total + mesh.count, 0),
     sharedContainerGeometries: new Set(containerMeshes.map((mesh) => mesh.geometry)).size,
+    coastlinePoints: TAIWAN_MAIN.length + KAOHSIUNG_HARBOR_LAND.length + PENGHU_MAIN.length,
     groundedFacilities: KAOHSIUNG_PORT_LAYOUT.reduce(
       (total, layout) => total + layout.cranes.length
         + layout.yards.length + layout.buildings.length,

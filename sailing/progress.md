@@ -106,3 +106,12 @@ Original prompt: 在 https://clare-le.github.io 首頁最下面新增一個叫�
 - Distributed 20 reusable gantry cranes along the simplified inner harbor: 10 on the west bank and 10 on the east bank. Each bank follows its own shoreline coordinates, keeps at least 18 world metres between neighboring cranes, places all nine sampled support points on mapped land, and aims the loading booms toward the channel.
 - Extended harbor fog visibility from 185 to 340 world metres so the farther east-bank crane line remains readable from the spawn while retaining atmospheric depth.
 - Verified the 20-crane harbor at 393 x 852 in Chromium and WebKit. Forward, port, and starboard views show separated shore-mounted cranes; both banks report exactly 10 placements, all support samples pass mapped-land checks, and no browser errors were captured.
+
+## 2026-09-08
+
+- Replaced the coarse Taiwan/Penghu geometry with a mobile-simplified NLSC county-boundary outline: 2,335 points for the Taiwan mainland and 421 for Penghu. The 100 km chart now has a substantially more recognizable southern Taiwan profile.
+- Cut the coarse Kaohsiung area out of the national outline and inserted a 614-point OpenStreetMap harbor coastline ring. The 1 km chart now shows the first harbor, Qijin-side terminals, the central island, channel edges, and individual piers instead of angular placeholder wedges.
+- Moved the yacht spawn to navigable water at 22.613 N, 120.283 E. It starts with 238.8 m of hull-adjusted shore clearance and no shallow-water warning while retaining the northwest harbor-exit heading.
+- Repositioned the shared cargo district and both ten-crane banks against the detailed coastline. Automated checks sample 121 apron points and nine support points per crane; all 20 cranes, 162 containers, and both buildings remain on mapped land in Chromium and WebKit.
+- Added a water-spawn regression assertion and map attribution. Visually inspected the 1/10/100 km charts, forward view, both 90-degree side views, and the required game-client screenshot; coastal travel, collision/reverse escape, panels, camera look, and anchor regressions remain error-free.
+- Next: collect real iPhone Safari performance feedback on the denser 3,370-point coastline before adding terrain height, breakwaters, or more port objects.
