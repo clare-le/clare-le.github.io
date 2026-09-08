@@ -5,3 +5,4 @@
 .train-type{font-size:10px;color:#6d8373;letter-spacing:.5px}@media(max-width:760px){.train-type{display:none}.header-actions #camera{font-size:10px}}
 
 #game[data-mode="ready"] #next-station,#game[data-mode="ready"] #message{visibility:hidden}.journey p .weather{margin:0}.mobile-train{display:none}@media(max-width:760px){.journey p .weather{display:none}.journey p .mobile-train{display:inline;margin:0;font-size:9px}}
+#location-tag{position:absolute;left:28px;top:47px;display:flex;align-items:center;gap:8px;background:#f6f9edf0;border:1px solid #ffffff70;border-radius:4px;padding:7px 10px;font-size:12px;color:#31594f}#location-tag small{font-size:9px;color:#7a9383}#game[data-mode="ready"] #location-tag{visibility:hidden}@media(max-width:760px){#location-tag{left:14px;top:38px;font-size:10px;padding:6px 8px}#location-tag small{display:none}}

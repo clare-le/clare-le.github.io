@@ -22,3 +22,14 @@ Original prompt: 我想你在我的GitHub首頁最下面再加一個網頁，就
 ## Scope / future work
 - Prototype only: route geometry, distances, handling and car details are simplified. No real timetable or safety-system simulation.
 - Future optional work: geographic alignment, more vehicle detailing and motor sounds. No pending gameplay blockers.
+
+## Route refinement — 2026-09-08
+- User supplied a Liujia–Zhuzhong map image and requested matching curvature, roads and rivers.
+- Added route.js with shared 1,200 m arc-length sampling based on approximate screenshot geometry. Smooth westward alignment, main straight and gentle Zhuzhong approach replace the old sinusoidal track.
+- Added Xinglong Road, Touqian River/wide water/sandbars, Highway 68, Yuanshan Road, plus Wenxing Road and Gaotie 5th Road near Liujia. Road and river strips cross obliquely in the screenshot order.
+- Tracks, catenary, platform segments, car positions and both cameras now use shared tangent/normal vectors. Raised railway 6 m; road crossings retain vertical clearance and omit railway piers on roadways.
+- Kept the existing same-consist return logic, speed, braking and scoring rules.
+- Independent numeric review: minimum curve radius 120.18 m; 20.8 m arc car spacing gives 20.77974–20.80102 m chord spacing; endpoint extension continuous. Crossings: Xinglong ~343 m, river ~442 m, Highway 68 ~549 m, Yuanshan ~1,010 m. These are game units, not real distances.
+- Browser verification passed: full outward/return stops both 93 points; pause, emergency braking, overshoot/retry, same-consist reversal, fullscreen, mobile controls all retained. No console/page errors.
+- Inspected screenshots for Xinglong, river cab/exterior, Highway 68, Yuanshan, Zhuzhong curve, return approach and mobile river views. No track gaps, road/rail intersections or scenery inside the main river were observed.
+- Standard skill-client run and numerical geometry review both passed. Changes ready for GitHub Pages publication.

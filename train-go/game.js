@@ -1,7 +1,8 @@
 import * as THREE from './vendor/three.module.min.js';
+import { ROUTE_LENGTH, RAIL_RISE, routeFrame, routePoint, mapPoint, roads, river, riverDistance, reserveScenery, nearestRouteDistance, landmarks, locationAt } from './route.js';
 
 const $ = id => document.getElementById(id);
-const LENGTH = 1200, CAR_LENGTH = 20, SPACING = 20.8, TRAIN_LENGTH = CAR_LENGTH + SPACING * 3;
+const LENGTH = ROUTE_LENGTH, CAR_LENGTH = 20, SPACING = 20.8, TRAIN_LENGTH = CAR_LENGTH + SPACING * 3;
 const state = { mode: 'ready', leg: 0, position: 0, speed: 0, notch: 0, elapsed: 0, penalty: 0, scores: [], dwell: 0, view: 'cab', sound: false };
 let manualTime = false, lastTime = 0, audioContext, renderer;
 const scene = new THREE.Scene();
@@ -34,8 +35,6 @@ function flush() {
   }
   batches.clear();
 }
-const trackX = z => z <= 100 || z >= 1100 ? 0 : Math.sin(Math.PI * (z - 100) / 1000) ** 2 * (15 * Math.sin(z / 230) + 6 * Math.sin(z / 97));
-const trackAngle = z => Math.atan((trackX(z+1)-trackX(z-1))/2);
 let seed = 500;
 function rand() { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; }
 function label(text, sub, x, y, z, facing=0, width=7) {
@@ -47,60 +46,102 @@ function label(text, sub, x, y, z, facing=0, width=7) {
   for(const side of [0,1]){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(width,width*.3125),new THREE.MeshBasicMaterial({map:tex}));mesh.rotation.y=side*Math.PI;mesh.position.z=side?-.015:.015;sign.add(mesh);}
   scene.add(sign);return sign;
 }
-// 方塊建物、稻田與高架軌道使用實例化繪製，手機也不必逐棟送出 draw call。
-box(0,-1,600,2600,2,2900,'#9cac77');
-for(let z=-200;z<1430;z+=4){
-  const x=trackX(z), a=trackAngle(z);
-  box(x,3.3,z,8,1.4,4.15,'#b9b9a5',a);
-  box(x,4.04,z,5.5,.15,4.15,'#7e8274',a);
-  for(const side of [-1,1]){box(x+side*.85,4.25,z,.12,.16,4.2,'#c0c8bc',a);box(x+side*3.9,4.55,z,.18,.9,4.2,'#d0cdb6',a);}
-  box(x,4.14,z,2.6,.15,.35,'#605f52',a);
-  if(z%40===0){box(x,1.3,z,2.1,3.1,2.5,'#aaa995');box(x-3.3,7.6,z,.17,7,.17,'#687a6d');box(x,10.9,z,6.9,.16,.16,'#687a6d');}
-  box(x,10.7,z,.035,.035,4.2,'#718074',a);
+// 同一份弧長座標同時驅動軌道、列車、站台與鏡頭。
+function trackBox(s,offset,y,w,h,d,color){const p=routeFrame(s);box(p.x+p.nx*offset,y+RAIL_RISE,p.z+p.nz*offset,w,h,d,color,p.angle);}
+function trackLabel(text,sub,s,offset,y,width=7){const p=routeFrame(s);return label(text,sub,p.x+p.nx*offset,y+RAIL_RISE,p.z+p.nz*offset,p.angle,width);}
+function segment(a,b,y,width,height,color){const dx=b.x-a.x,dz=b.z-a.z;box((a.x+b.x)/2,y,(a.z+b.z)/2,width,height,Math.hypot(dx,dz)+.18,color,Math.atan2(dx,dz));}
+function strip(points,width,y,color){for(let i=1;i<points.length;i++)segment(mapPoint(...points[i-1]),mapPoint(...points[i]),y,width,.06,color);}
+box(-150,-1,650,3100,2,3400,'#9cac77');
+// 河濱草地 → 沙礫灘 → 主水道，刻意留出沒有建物的開闊河面。
+strip(river.points,river.width+150,.02,'#a5b691');
+strip(river.points,river.width+45,.065,'#c7c5a6');
+strip(river.points,river.width,.13,'#69b8c5');
+strip(river.points.map(([x,y])=>[x,y+13]),river.width*.4,.17,'#77c5cd');
+const streams=[[[260,623],[278,653],[370,682],[340,717],[420,758],[390,799]],[[12,488],[90,594],[150,625],[173,697],[230,735]],[[456,753],[423,800],[474,837],[525,851]]];
+for(const points of streams){strip(points,8,.08,'#bec5a6');strip(points,4,.16,'#7ab9bb');}
+for(let i=0;i<17;i++){
+ const xx=-170+i*60,yy=566+.56*(xx-360)+(rand()-.5)*32,p=mapPoint(xx,yy);
+ if(nearestRouteDistance(p.x,p.z)<20)continue;
+ box(p.x,.21,p.z,9+rand()*16,.13,3+rand()*8,'#d5d1af',-.99);
 }
-for(let z=-150;z<1400;z+=31){
-  const field=z>270&&z<820;
-  for(const side of [-1,1]){
-    if(field && rand()>.3){
-      const x=trackX(z)+side*(28+rand()*18);box(x,.04,z,30,.1,27,rand()>.5?'#b6be78':'#8caa70');
-      for(let j=-12;j<=12;j+=4)box(x+j,.12,z,.22,.12,25,'#6f9569');
-    } else {
-      const x=trackX(z)+side*(20+rand()*40),w=8+rand()*12,h=5+rand()*(field?8:29),d=10+rand()*10;
-      const colors=['#ded7bb','#c5cebb','#c9c8b4','#d7c6b1','#e0ddcc','#aabaa9'];
-      box(x,h/2,z,w,h,d,colors[Math.floor(rand()*colors.length)]);box(x,h+.35,z,w+.3,.7,d+.3,'#9ba897');
-      box(x+2,h+1.2,z,3,1.2,3,'#bbc1b4');
-      for(let yy=3;yy<h-1;yy+=3.5)for(let zz=-d/2+2;zz<d/2-1;zz+=3)box(x-side*(w/2+.015),yy,z+zz,.03,1.6,1.5,'#6b8988');
-      for(let yy=3;yy<h-1;yy+=3.5)for(let xx=-w/2+2;xx<w/2-1;xx+=3)box(x+xx,yy,z-d/2-.02,1.4,1.6,.04,'#759592');
-    }
-    for(let t=0;t<2;t++){
-      const x=trackX(z)+side*(12+rand()*60),zz=z+rand()*25,hh=3+rand()*3;
-      box(x,hh/2,zz,.5,hh,.5,'#8a8b68');box(x,hh,zz,3.7,3.8,3.5,rand()>.5?'#73956d':'#87a16f');
-    }
+// 路面低於鐵路橋：一般道路走地面，台 68 另設較低的高架路面。
+for(const road of roads){
+ for(let i=1;i<road.points.length;i++){
+  const a=mapPoint(...road.points[i-1]),b=mapPoint(...road.points[i]),dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz),angle=Math.atan2(dx,dz),nx=dz/length,nz=-dx/length;
+  segment(a,b,road.y-.2,road.width+.8,.4,'#b4b8a8');segment(a,b,road.y+.025,road.width,.08,'#777f78');
+  for(const side of [-1,1])segment({x:a.x+nx*side*(road.width/2-.5),z:a.z+nz*side*(road.width/2-.5)},{x:b.x+nx*side*(road.width/2-.5),z:b.z+nz*side*(road.width/2-.5)},road.y+.09,.12,.04,'#e3e0bf');
+  for(let d=5;d<length;d+=12){const t=d/length;box(a.x+dx*t,road.y+.1,a.z+dz*t,.13,.04,6,'#ebe4bb',angle);}
+  if(road.name==='台 68 線'){
+   segment(a,b,road.y+.18,.45,.25,'#c6cabc');
+   for(let d=22;d<length;d+=40){const t=d/length,x=a.x+dx*t,z=a.z+dz*t;if(nearestRouteDistance(x,z)>10)box(x,1.05,z,1.1,2.1,1.1,'#a0a998');}
   }
-}
-// 平行道路與可辨識的車流方塊。
-box(-80,.05,600,9,.1,1600,'#989e8e');
-for(let z=-150;z<1400;z+=16){box(-80,.12,z,.18,.03,7,'#e1dfbe');if(z%48===0){box(-82,1,z,1.9,1.5,4.3,'#e3dfc9');box(-82,1.9,z,1.6,.65,2.5,'#698986');}}
-for(let i=0;i<24;i++){
- const mountain=new THREE.Mesh(new THREE.ConeGeometry(110+rand()*140,75+rand()*100,5),material(i%2?'#92b8a3':'#8bb39e'));
- mountain.position.set((i%2?-1:1)*(380+rand()*160),20,i*100-400);mountain.rotation.y=rand()*3;scene.add(mountain);
-}
-function station(z,name,en){
- const x=trackX(z);
- for(const side of [-1,1]){
-  box(x+side*6.7,3.9,z,5.1,1.8,180,'#d9d4b8');box(x+side*4.25,4.84,z,.35,.06,180,'#e7c966');
-  box(x+side*7,8.3,z,7,.3,120,'#819c8a');box(x+side*7,8.53,z,7.5,.15,120,'#c0cbb7');
-  for(let zz=z-55;zz<=z+55;zz+=22){box(x+side*8,6.5,zz,.25,3.2,.25,'#779281');box(x+side*7,5.2,zz,1.2,.6,2,'#8c9b82');}
-  label(name,en,x+side*7,6.9,z+side*28,0,5.5);
+  for(let d=17;d<length;d+=78){
+   const t=d/length,side=d%2?-1:1,x=a.x+dx*t+nx*road.width*.23*side,z=a.z+dz*t+nz*road.width*.23*side;
+   box(x,road.y+.67,z,1.8,1.1,4.2,'#e5dfc6',angle);box(x,road.y+1.4,z,1.65,.5,2.35,'#647f82',angle);
+  }
  }
- box(x,4.27,z,2.7,.04,.35,'#fff6bd');
- label('停車位置','STOP ±8m',x+3.1,5.65,z,0,2.8);
+}
+for(let s=-200;s<1430;s+=4){
+ const p=routeFrame(s),bridge=riverDistance(p.x,p.z)<river.width/2+20;
+ trackBox(s,0,3.3,bridge?7:8,1.4,4.18,bridge?'#aeb8ac':'#b9b9a5');
+ trackBox(s,0,4.04,5.5,.15,4.18,'#7e8274');
+ for(const side of [-1,1]){
+  trackBox(s,side*.85,4.25,.12,.16,4.2,'#c0c8bc');
+  trackBox(s,side*3.45,4.55,.16,.9,4.2,bridge?'#678d84':'#d0cdb6');
+ }
+ trackBox(s,0,4.14,2.6,.15,.35,'#605f52');
+ if(s%40===0){
+  const onRoad=roads.some(r=>{const points=r.points;for(let i=1;i<points.length;i++){const a=mapPoint(...points[i-1]),b=mapPoint(...points[i]),dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/(dx*dx+dz*dz)));if(Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t)<r.width/2+3)return true;}return false;});
+  if(!onRoad)box(p.x,(RAIL_RISE+2.6)/2,p.z,bridge?2.4:2.1,RAIL_RISE+2.6,bridge?3.5:2.5,bridge?'#91a598':'#aaa995',p.angle);
+  trackBox(s,-3.1,7.6,.17,7,.17,'#687a6d');trackBox(s,0,10.9,6.5,.16,.16,'#687a6d');
+ }
+ trackBox(s,0,10.7,.035,.035,4.2,'#718074');
+ // 鐵橋上開放式護欄，保留兩侧看見河水的視野。
+ if(bridge&&s%8===0)for(const side of [-1,1]){trackBox(s,side*3.4,5.2,.14,1.8,.14,'#678d84');trackBox(s,side*3.4,6,.12,.12,8.2,'#678d84');}
+}
+for(let s=-150;s<1400;s+=27){
+ const field=s>640&&s<1010;
+ for(const side of [-1,1]){
+  const offset=side*(24+rand()*47),p=routePoint(s,offset);
+  if(!reserveScenery(p.x,p.z,15)){
+   if(field&&rand()>.25){
+    const a=routeFrame(s);box(p.x,.06,p.z,24,.1,23,rand()>.5?'#b6be78':'#8caa70',a.angle);
+    for(let j=-10;j<=10;j+=4)box(p.x+a.nx*j,.14,p.z+a.nz*j,.22,.12,21,'#6f9569',a.angle);
+   }else{
+    const w=8+rand()*9,h=5+rand()*(field?6:24),d=9+rand()*9;
+    const colors=['#ded7bb','#c5cebb','#c9c8b4','#d7c6b1','#e0ddcc','#aabaa9'];
+    box(p.x,h/2,p.z,w,h,d,colors[Math.floor(rand()*colors.length)]);box(p.x,h+.35,p.z,w+.3,.7,d+.3,'#9ba897');box(p.x+2,h+1.2,p.z,3,1.2,3,'#bbc1b4');
+    for(let yy=3;yy<h-1;yy+=3.5)for(let zz=-d/2+2;zz<d/2-1;zz+=3)box(p.x-side*(w/2+.015),yy,p.z+zz,.03,1.6,1.5,'#6b8988');
+    for(let yy=3;yy<h-1;yy+=3.5)for(let xx=-w/2+2;xx<w/2-1;xx+=3)box(p.x+xx,yy,p.z-d/2-.02,1.4,1.6,.04,'#759592');
+   }
+  }
+  for(let t=0;t<2;t++){
+   const p=routePoint(s+rand()*20,side*(14+rand()*90)),h=3+rand()*3;
+   if(reserveScenery(p.x,p.z,4))continue;
+   box(p.x,h/2,p.z,.5,h,.5,'#8a8b68');box(p.x,h,p.z,3.7,3.8,3.5,rand()>.5?'#73956d':'#87a16f');
+  }
+ }
+}
+for(let i=0;i<10;i++){
+ const m=new THREE.Mesh(new THREE.ConeGeometry(130+rand()*130,60+rand()*85,5),material(i%2?'#92b8a3':'#8bb39e'));
+ m.position.set(700+rand()*400,10,i*180-250);m.rotation.y=rand()*3;scene.add(m);
+}
+function station(s,name,en){
+ for(const side of [-1,1]){
+  for(let d=-88;d<=88;d+=4){trackBox(s+d,side*6.25,3.9,4.9,1.8,4.3,'#d9d4b8');trackBox(s+d,side*3.98,4.84,.35,.06,4.3,'#e7c966');}
+  for(let d=-60;d<=60;d+=4){trackBox(s+d,side*6.8,8.3,6.5,.3,4.3,'#819c8a');trackBox(s+d,side*6.8,8.53,7,.15,4.3,'#c0cbb7');}
+  for(let d=-55;d<=55;d+=22){trackBox(s+d,side*8,6.5,.25,3.2,.25,'#779281');trackBox(s+d,side*7,5.2,1.2,.6,2,'#8c9b82');}
+  trackLabel(name,en,s+side*28,side*7,6.9,5.5);
+ }
+ trackBox(s,0,4.27,2.7,.04,.35,'#fff6bd');trackLabel('停車位置','STOP ±8m',s,2.6,5.65,2.8);
 }
 station(0,'六家','LIUJIA');station(LENGTH,'竹中','ZHUZHONG');
-// 六家端的站體量塊，作為出發與回程的地景記號。
-box(75,13,15,65,26,80,'#c5d3c9');box(75,27,15,69,2,84,'#e7e6d4');
-for(let y=5;y<25;y+=5)box(41.9,y,15,.15,3.2,75,'#86a9a5');
-label('六家','LIUJIA STATION',75,20,-25.1,Math.PI,26);
+const terminal=routePoint(15,90);box(terminal.x,13,terminal.z,55,26,65,'#c5d3c9');box(terminal.x,27,terminal.z,60,2,70,'#e7e6d4');
+for(let y=5;y<25;y+=5)box(terminal.x-27.6,y,terminal.z,.15,3.2,60,'#86a9a5');
+label('六家','LIUJIA STATION',terminal.x,20,terminal.z-33,Math.PI,22);
+for(const mark of landmarks.filter(f=>f.s>100&&f.s<1150)){
+ const p=routeFrame(mark.s);trackLabel(mark.name,mark.name==='頭前溪鐵橋'?'TOUQIAN RIVER':'HSINCHU',mark.s,mark.name==='頭前溪鐵橋'?-9:11,7.2,mark.name==='頭前溪鐵橋'?8:7);
+}
 flush();
 
 const train = new THREE.Group();scene.add(train);
@@ -134,6 +175,7 @@ for(let i=0;i<4;i++){
  if(i<3)box(0,5.8,-10.4,1.9,1.8,.8,'#52625e',0,car);
 }
 
+$('view').insertAdjacentHTML('beforeend','<div id="location-tag"><small>沿途地景</small><span id="location-name">六家站</span></div>');
 const cameraButton=document.createElement('button');cameraButton.id='camera';cameraButton.textContent='車外 C';cameraButton.setAttribute('aria-label','切換駕駛與車外視角');$('sound').before(cameraButton);
 $('leg').insertAdjacentHTML('afterend','<span class="train-type">EMU500 · 4 輛</span>');
 $('overlay').querySelector('.note').innerHTML='EMU500 四節編組 · 手機可用下方按鈕操作<br>原創鐵道駕駛雛形，場景與里程經簡化，非官方作品。';
@@ -208,23 +250,22 @@ function hud(){
  if(state.mode==='ready')msg='準備好，開始今天的乘務。';
  if(state.mode==='station'){msg='竹中站・開門上下車';$('continue-btn').textContent=state.dwell>0?`旅客上下車 · ${Math.ceil(state.dwell)} 秒`:'換端駕駛，返回六家 →';$('continue-btn').disabled=state.dwell>0;}
  if(state.mode==='complete')msg='往返乘務完成，辛苦了。';
- $('message').textContent=msg;$('coach').textContent=coach;
+ $('location-name').textContent=locationAt(state.position);$('message').textContent=msg;$('coach').textContent=coach;
  $('pause').textContent=state.mode==='paused'?'繼續 ▶':'暫停 Ⅱ';
  for(const id of ['power','brake','neutral','emergency'])$(id).disabled=state.mode!=='driving';
 }
 function draw(){
- const direction=dir(),z=state.position;
- // 前端位置固定；回程切換駕駛端，不把列車憑空掉頭。
- const front=state.leg===0?z:z+TRAIN_LENGTH;
- cars.forEach((car,i)=>{const zz=front-CAR_LENGTH/2-i*SPACING;car.position.set(trackX(zz),0,zz);car.rotation.y=trackAngle(zz);});
+ const direction=dir(),s=state.position;
+ const front=state.leg===0?s:s+TRAIN_LENGTH;
+ cars.forEach((car,i)=>{const d=front-CAR_LENGTH/2-i*SPACING,p=routeFrame(d);car.position.set(p.x,RAIL_RISE,p.z);car.rotation.y=p.angle;car.userData.routeDistance=d;});
  train.visible=state.view==='exterior';
  if(state.view==='exterior'){
-  const center=z-direction*TRAIN_LENGTH/2, distanceScale=Math.max(1,1.6/camera.aspect);
-  camera.position.set(trackX(center)+49*distanceScale,5+26*distanceScale,center-direction*32*distanceScale);
-  camera.lookAt(trackX(center),5,center);
+  const center=routeFrame(s-direction*TRAIN_LENGTH/2), distanceScale=Math.max(1,1.6/camera.aspect);
+  camera.position.set(center.x+(center.nx*49-center.tx*direction*32)*distanceScale,RAIL_RISE+5+26*distanceScale,center.z+(center.nz*49-center.tz*direction*32)*distanceScale);
+  camera.lookAt(center.x,RAIL_RISE+5,center.z);
  }else{
-  camera.position.set(trackX(z),7.05,z);
-  camera.lookAt(trackX(z+direction*65),5.8,z+direction*65);
+  const p=routeFrame(s),ahead=routePoint(s+direction*50);
+  camera.position.set(p.x,RAIL_RISE+7.05,p.z);camera.lookAt(ahead.x,RAIL_RISE+5.8,ahead.z);
  }
  renderer.render(scene,camera);
 }
@@ -248,7 +289,7 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('resize',resize);new ResizeObserver(resize).observe($('view'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.mode==='driving')togglePause();});
-window.render_game_to_text=()=>JSON.stringify({mode:state.mode,vehicle:'EMU500',car_count:4,camera:state.view,coordinate_system:'meters; +z Liujia to Zhuzhong; position is active cab; +x right/east in simplified world',leg:state.leg,from:state.leg===0?'六家':'竹中',to:state.leg===0?'竹中':'六家',position_m:+state.position.toFixed(2),remaining_m:+remaining().toFixed(2),speed_kmh:+(state.speed*3.6).toFixed(2),notch:state.notch,suggested_kmh:+suggested().toFixed(1),limit_kmh:60,stop_tolerance_m:8,elapsed_s:+state.elapsed.toFixed(2),overspeed_penalty:+state.penalty.toFixed(2),scores:state.scores,dwell_s:+state.dwell.toFixed(2),car_positions:cars.map(c=>+c.position.z.toFixed(1))});
+window.render_game_to_text=()=>JSON.stringify({mode:state.mode,vehicle:'EMU500',car_count:4,camera:state.view,coordinate_system:'meters; position_m is arc distance along track; world +x map right, +z map down; active cab reverses on return',leg:state.leg,from:state.leg===0?'六家':'竹中',to:state.leg===0?'竹中':'六家',position_m:+state.position.toFixed(2),remaining_m:+remaining().toFixed(2),speed_kmh:+(state.speed*3.6).toFixed(2),notch:state.notch,suggested_kmh:+suggested().toFixed(1),limit_kmh:60,stop_tolerance_m:8,elapsed_s:+state.elapsed.toFixed(2),overspeed_penalty:+state.penalty.toFixed(2),scores:state.scores,dwell_s:+state.dwell.toFixed(2),car_positions:cars.map(c=>+c.userData.routeDistance.toFixed(1)),car_world_positions:cars.map(c=>({x:+c.position.x.toFixed(2),z:+c.position.z.toFixed(2),heading:+c.rotation.y.toFixed(3)})),location:locationAt(state.position),landmarks:landmarks.map(f=>({name:f.name,route_m:f.s})),route_revision:2});
 window.advanceTime=ms=>{manualTime=true;let left=Math.max(0,Math.min(ms,300000))/1000;while(left>0){const dt=Math.min(1/60,left);update(dt);left-=dt;}hud();draw();};
 function frame(t){if(!manualTime)update(Math.min((t-lastTime)/1000||0, .05));lastTime=t;hud();draw();requestAnimationFrame(frame);}
 resize();hud();requestAnimationFrame(frame);
