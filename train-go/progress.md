@@ -33,3 +33,14 @@ Original prompt: 我想你在我的GitHub首頁最下面再加一個網頁，就
 - Browser verification passed: full outward/return stops both 93 points; pause, emergency braking, overshoot/retry, same-consist reversal, fullscreen, mobile controls all retained. No console/page errors.
 - Inspected screenshots for Xinglong, river cab/exterior, Highway 68, Yuanshan, Zhuzhong curve, return approach and mobile river views. No track gaps, road/rail intersections or scenery inside the main river were observed.
 - Standard skill-client run and numerical geometry review both passed. Changes ready for GitHub Pages publication.
+
+## Zhuzhong close-up refinement — 2026-09-08
+- User supplied a closer map of the station approach, then asked to finish the pending work.
+- Replaced the southwest terminal heading with a southbound approach, near-right-angle westward curve and westbound terminal straight.
+- Added Gongdao Road before the curve, placed Zhuzhong Road parallel south of the station, and corrected the lower diagonal road orientation using the two supplied images together.
+- Parallel Zhuzhong Road is excluded from automatically generated rail-crossing landmarks.
+- Numeric review: terminal heading exactly -90 degrees; 20.8 m arc spacing remains 20.7526–20.8030 m in world chord distance; endpoint extensions continuous. Screenshot layout remains illustrative.
+- Cache revision 3 applied to page, script and route module.
+- Final browser validation passed: both journey scores 93, same-consist reversal, pause/retry/braking and touch controls retained; no console/page errors.
+- Inspected close-up screenshots at Gongdao Road, curve entrance, exterior curve and westbound station straight, plus mobile cab/exterior. Standard skill client also passed.
+- Screenshot capture initially timed out with concurrent software-rendered browsers; rerun serially at a smaller desktop viewport passed. The local HTTP server was restarted after resuming the user task.

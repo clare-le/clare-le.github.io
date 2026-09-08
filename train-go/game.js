@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.min.js';
-import { ROUTE_LENGTH, RAIL_RISE, routeFrame, routePoint, mapPoint, roads, river, riverDistance, reserveScenery, nearestRouteDistance, landmarks, locationAt } from './route.js';
+import { ROUTE_LENGTH, RAIL_RISE, routeFrame, routePoint, mapPoint, roads, river, riverDistance, reserveScenery, nearestRouteDistance, landmarks, locationAt } from './route.js?v=route-3';
 
 const $ = id => document.getElementById(id);
 const LENGTH = ROUTE_LENGTH, CAR_LENGTH = 20, SPACING = 20.8, TRAIN_LENGTH = CAR_LENGTH + SPACING * 3;
@@ -289,7 +289,7 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('resize',resize);new ResizeObserver(resize).observe($('view'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.mode==='driving')togglePause();});
-window.render_game_to_text=()=>JSON.stringify({mode:state.mode,vehicle:'EMU500',car_count:4,camera:state.view,coordinate_system:'meters; position_m is arc distance along track; world +x map right, +z map down; active cab reverses on return',leg:state.leg,from:state.leg===0?'六家':'竹中',to:state.leg===0?'竹中':'六家',position_m:+state.position.toFixed(2),remaining_m:+remaining().toFixed(2),speed_kmh:+(state.speed*3.6).toFixed(2),notch:state.notch,suggested_kmh:+suggested().toFixed(1),limit_kmh:60,stop_tolerance_m:8,elapsed_s:+state.elapsed.toFixed(2),overspeed_penalty:+state.penalty.toFixed(2),scores:state.scores,dwell_s:+state.dwell.toFixed(2),car_positions:cars.map(c=>+c.userData.routeDistance.toFixed(1)),car_world_positions:cars.map(c=>({x:+c.position.x.toFixed(2),z:+c.position.z.toFixed(2),heading:+c.rotation.y.toFixed(3)})),location:locationAt(state.position),landmarks:landmarks.map(f=>({name:f.name,route_m:f.s})),route_revision:2});
+window.render_game_to_text=()=>JSON.stringify({mode:state.mode,vehicle:'EMU500',car_count:4,camera:state.view,coordinate_system:'meters; position_m is arc distance along track; world +x map right, +z map down; active cab reverses on return',leg:state.leg,from:state.leg===0?'六家':'竹中',to:state.leg===0?'竹中':'六家',position_m:+state.position.toFixed(2),remaining_m:+remaining().toFixed(2),speed_kmh:+(state.speed*3.6).toFixed(2),notch:state.notch,suggested_kmh:+suggested().toFixed(1),limit_kmh:60,stop_tolerance_m:8,elapsed_s:+state.elapsed.toFixed(2),overspeed_penalty:+state.penalty.toFixed(2),scores:state.scores,dwell_s:+state.dwell.toFixed(2),car_positions:cars.map(c=>+c.userData.routeDistance.toFixed(1)),car_world_positions:cars.map(c=>({x:+c.position.x.toFixed(2),z:+c.position.z.toFixed(2),heading:+c.rotation.y.toFixed(3)})),location:locationAt(state.position),landmarks:landmarks.map(f=>({name:f.name,route_m:f.s})),route_revision:3});
 window.advanceTime=ms=>{manualTime=true;let left=Math.max(0,Math.min(ms,300000))/1000;while(left>0){const dt=Math.min(1/60,left);update(dt);left-=dt;}hud();draw();};
 function frame(t){if(!manualTime)update(Math.min((t-lastTime)/1000||0, .05));lastTime=t;hud();draw();requestAnimationFrame(frame);}
 resize();hud();requestAnimationFrame(frame);
